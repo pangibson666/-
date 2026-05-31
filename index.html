@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉V1.6</title>
+    <title>沉澱試煉V1.7</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -26,7 +26,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Practice View */
-        .card { background: var(--card-bg); border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px; text-align: center; margin-bottom: 20px; }
+        .card { background: var(--card-bg); border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px; text-align: center; margin-bottom: 20px; position: relative; }
         .ion-display { font-size: 2.5rem; font-weight: bold; letter-spacing: 2px; margin: 20px 0; color: var(--primary); }
         
         .btn-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
@@ -74,7 +74,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉V1.6</header>
+    <header>沉澱試煉V1.7</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-settings" onclick="switchTab('settings')">⚙️ 設定區</button>
@@ -85,6 +85,11 @@
         <!-- 練習區 -->
         <div id="view-practice" class="view active">
             <div class="card">
+                <!-- 累積成就顯示區 -->
+                <div style="text-align: right; color: #888; font-size: 0.95rem; font-weight: bold; margin-bottom: -10px;">
+                    💯 累積練習：<span id="practice-count" style="color: var(--primary); font-size: 1.3rem;">0</span> 題
+                </div>
+
                 <div id="ion-display" class="ion-display">載入中...</div>
                 
                 <div class="btn-group">
@@ -104,7 +109,7 @@
         <!-- 設定區 -->
         <div id="view-settings" class="view">
             <p class="info-text">💡 勾選你想練習的離子組合，未勾選的離子不會出現在題目中。<br>※ 題目只會出現「資料庫中存在」的組合。</p>
-	    <button onclick="setHighSchool()" style="margin-bottom: 15px; padding: 10px 15px; background: #8E44AD; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 一鍵套用高中課內範圍</button>
+	        <button onclick="setHighSchool()" style="margin-bottom: 15px; padding: 10px 15px; background: #8E44AD; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 一鍵套用高中課內範圍</button>
             <div class="settings-group">
                 <h3>陽離子 (Cations) <button onclick="toggleAll('cations', true)" style="font-size:0.8rem; margin-left:10px;">全選</button> <button onclick="toggleAll('cations', false)" style="font-size:0.8rem;">全不選</button></h3>
                 <div id="cations-settings" class="checkbox-grid"></div>
@@ -120,14 +125,25 @@
         <div id="view-mistakes" class="view">
             <div class="action-btns">
                 <button class="btn-copy" onclick="copyMistakes()">📋 複製錯題筆記</button>
-                <button class="btn-clear" onclick="clearMistakes()">🗑️ 清空錯題本</button>
+                <button class="btn-clear" onclick="clearMistakes()">🗑️ 清空所有</button>
             </div>
+            
+            <!-- 手動加入區塊 -->
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid var(--primary);">
+                <div style="font-weight: bold; margin-bottom: 10px; color: var(--primary);">⭐ 手動加入想特別注意的組合：</div>
+                <div style="display: flex; gap: 10px;">
+                    <select id="manual-c" style="flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1.1rem;"></select>
+                    <select id="manual-a" style="flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1.1rem;"></select>
+                    <button onclick="manualAddMistake()" style="padding: 8px 15px; background: #F39C12; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">➕ 加入</button>
+                </div>
+            </div>
+
             <div id="mistakes-list"></div>
         </div>
     </div>
 
     <script>
-        // --- 資料庫 (已隱藏於此) ---
+        // --- 資料庫 ---
         const rawTextData = `
 $Ag^+$, $Cl^-$, $AgCl$, 白
 $Ag^+$, $Br^-$, $AgBr$, 淡黃
@@ -536,20 +552,20 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             "紫": { bg: "#9B59B6", text: "#FFF", border: "#76448A" }
         };
 
-        // 按鈕顯示順序
         const colorOrder = ["白", "淡黃", "黃", "橘", "紅", "紅褐/磚紅", "棕", "黑", "淺綠/灰綠", "綠", "黃綠", "藍綠", "淺藍", "藍", "粉紅/肉色", "紫"];
 
         let database = [];
         let cationsMap = {};
         let anionsMap = {};
         let uniqueSimplifiedColors = new Set();
+        
+        // 計數器全域變數
+        let practiceCount = parseInt(localStorage.getItem('chemPracticeCountV2')) || 0;
 
-        // [完美修正]：正確處理大括號下標與單一字元下標 (解決 O4 變下標的問題)
         function formatFormula(texStr) {
             let s = texStr.replace(/\$/g, '').trim();
             s = s.replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>');
             s = s.replace(/_\{([^}]+)\}/g, '<sub>$1</sub>');
-            // 只抓取單一字元作為下標，完美對應標準 LaTeX 邏輯
             s = s.replace(/\^([a-zA-Z0-9+-])/g, '<sup>$1</sup>');
             s = s.replace(/_([a-zA-Z0-9+-])/g, '<sub>$1</sub>');
             return s;
@@ -601,6 +617,9 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             selectedCations = savedC || Object.keys(cationsMap);
             selectedAnions = savedA || Object.keys(anionsMap);
 
+            // 更新計數器畫面
+            document.getElementById('practice-count').innerText = practiceCount;
+
             renderSettings();
             renderColorButtons();
             nextQuestion();
@@ -618,7 +637,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             const container = document.getElementById('color-options');
             container.innerHTML = '';
             
-            // 將顏色依照自訂陣列排序，排版更直覺
             let colorsArray = Array.from(uniqueSimplifiedColors).sort((a, b) => {
                 let idxA = colorOrder.indexOf(a);
                 let idxB = colorOrder.indexOf(b);
@@ -693,7 +711,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             const actual = currentQ;
             let isCorrect = false;
 
-            // 判斷時比對的是「簡化後的分類顏色」
             if (!userGuessPpt && !actual.isPpt) {
                 isCorrect = true;
             } else if (userGuessPpt && actual.isPpt && userGuessColor === actual.simplifiedColor) {
@@ -707,7 +724,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             let resultFormulaHtml = `<div class="result-formula">${actual.compoundHtml}</div>`;
             
             if (isCorrect) {
-                // 但答對後，告訴他的還是「真正的顏色」，讓他加深印象
                 feedbackEl.innerHTML = `🎉 <b>答對了！</b><br>${resultFormulaHtml}<br>` + 
                     (actual.isPpt ? `產生 <b>${actual.color}</b> 沉澱。` : `可溶於水 (不沉澱)。`);
                 feedbackEl.className = 'feedback correct';
@@ -723,6 +739,11 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 
                 recordMistake(actual, actualText, userText);
             }
+
+            // 更新與儲存計數器
+            practiceCount++;
+            localStorage.setItem('chemPracticeCountV2', practiceCount);
+            document.getElementById('practice-count').innerText = practiceCount;
         }
 
         function recordMistake(q, actualText, userText) {
@@ -738,33 +759,75 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
         }
 
         function renderMistakes() {
+            const selC = document.getElementById('manual-c');
+            const selA = document.getElementById('manual-a');
+            if (selC && selC.options.length === 0) {
+                selC.innerHTML = Object.values(cationsMap).sort((a,b)=>a.id.localeCompare(b.id)).map(c => `<option value="${c.id}">${c.id}</option>`).join('');
+                selA.innerHTML = Object.values(anionsMap).sort((a,b)=>a.id.localeCompare(b.id)).map(a => `<option value="${a.id}">${a.id}</option>`).join('');
+            }
+
             const list = document.getElementById('mistakes-list');
             list.innerHTML = '';
             if (mistakes.length === 0) {
                 list.innerHTML = '<div class="empty-msg">✨ 目前沒有錯題紀錄，太神啦！繼續保持！ ✨</div>';
                 return;
             }
-            mistakes.forEach(m => {
+            mistakes.forEach((m, idx) => {
                 const div = document.createElement('div');
                 div.className = 'mistake-item';
                 div.innerHTML = `
-                    <div class="mistake-header">${m.htmlText} ➔ <span style="color:#333;">${m.compoundHtml}</span></div>
-                    <div class="mistake-detail">正確答案：<b>${m.actualText}</b><br>你當時選：${m.userText}</div>`;
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div class="mistake-header">${m.htmlText} ➔ <span style="color:#333;">${m.compoundHtml}</span></div>
+                            <div class="mistake-detail">正確答案：<b>${m.actualText}</b><br>狀態：${m.userText}</div>
+                        </div>
+                        <button onclick="removeMistake(${idx})" style="background:none; border:none; color:var(--wrong); font-size:1.5rem; cursor:pointer; padding:0 5px;" title="刪除此紀錄">✖</button>
+                    </div>`;
                 list.appendChild(div);
             });
+        }
+
+        function removeMistake(index) {
+            mistakes.splice(index, 1);
+            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes));
+            renderMistakes();
+        }
+
+        function manualAddMistake() {
+            const cid = document.getElementById('manual-c').value;
+            const aid = document.getElementById('manual-a').value;
+            const q = database.find(item => item.cid === cid && item.aid === aid);
+            
+            if (!q) return alert("💡 資料庫中沒有這組搭配喔！");
+            
+            const actualText = q.isPpt ? `會沉澱，顏色為 ${q.color}` : `不會沉澱 (可溶)`;
+            const htmlText = `${q.cHtml} + ${q.aHtml}`;
+            
+            mistakes = mistakes.filter(m => m.htmlText !== htmlText);
+            mistakes.unshift({
+                qText: `${q.cid} + ${q.aid}`,
+                htmlText: htmlText, compoundHtml: q.compoundHtml,
+                actualText: actualText, userText: "⚠️ 手動標記特別注意"
+            });
+            
+            if (mistakes.length > 100) mistakes.pop();
+            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes));
+            renderMistakes();
+            
+            alert(`✅ 已將 ${q.compoundHtml.replace(/<[^>]*>?/gm, '')} 加入錯題本！`);
         }
 
         function copyMistakes() {
             if (mistakes.length === 0) return alert("目前沒有錯題可以複製！");
             let text = "【錯題本】\n\n";
             mistakes.forEach((m, idx) => {
-                text += `${idx + 1}. ${m.qText} -> 產物: ${m.compoundHtml.replace(/<[^>]*>?/gm, '')}\n   正解：${m.actualText}\n   錯答：${m.userText}\n\n`;
+                text += `${idx + 1}. ${m.qText} -> 產物: ${m.compoundHtml.replace(/<[^>]*>?/gm, '')}\n   正解：${m.actualText}\n   狀態：${m.userText}\n\n`;
             });
             navigator.clipboard.writeText(text).then(() => alert("✅ 錯題已成功複製！")).catch(() => alert("複製失敗"));
         }
 
         function clearMistakes() {
-            if(confirm("確定要清空所有錯題紀錄嗎？")) {
+            if(confirm("確定要清空所有紀錄嗎？")) {
                 mistakes = []; localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); renderMistakes();
             }
         }
@@ -796,16 +859,13 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             alert('✅ 設定已儲存！'); switchTab('practice'); nextQuestion();
         }
 
-	function setHighSchool() {
-            // 根據你的截圖設定的範圍名單
+        function setHighSchool() {
             const hsCations = ["Ag+", "Al3+", "Ba2+", "Ca2+", "Cr3+", "Cu+", "Cu2+", "Fe2+", "Fe3+", "K+", "Li+", "Mg2+", "Mn2+", "Na+", "NH4+", "Pb2+", "Sr2+", "Tl+", "Zn2+"];
             const hsAnions = ["Br-", "CH3COO-", "Cl-", "CO32-", "CrO42-", "I-", "NO3-", "OH-", "S2-", "SO32-", "SO42-"];
             
-            // 自動勾選對應的陽離子
             document.querySelectorAll('#cations-settings input[type="checkbox"]').forEach(input => {
                 input.checked = hsCations.includes(input.value);
             });
-            // 自動勾選對應的陰離子
             document.querySelectorAll('#anions-settings input[type="checkbox"]').forEach(input => {
                 input.checked = hsAnions.includes(input.value);
             });
