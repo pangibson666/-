@@ -952,11 +952,14 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             });
         }
 
-        // 💡 修正 2：補上刪除單一紀錄用的函數 (放在 renderMistakes 下方即可)
+        // 💡 補上刪除單一紀錄用的函數，並加入確認視窗
         function removeMistake(index) {
-            mistakes.splice(index, 1); // 將該筆資料從陣列中刪除
-            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); // 更新本地儲存
-            renderMistakes(); // 重新渲染畫面
+            // 加入確認視窗，按下「確定」才會執行刪除
+            if (confirm("確定要刪除這筆紀錄嗎？")) {
+                mistakes.splice(index, 1); // 將該筆資料從陣列中刪除
+                localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); // 更新本地儲存
+                renderMistakes(); // 重新渲染畫面
+            }
         }
 
         function manualAddMistake() {
