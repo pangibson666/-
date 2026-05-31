@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V2.0</title>
+    <title>沉澱試煉 V2.1</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -74,7 +74,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V2.0</header>
+    <header>沉澱試煉 V2.1</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -139,7 +139,7 @@
                 <button id="chal-submit-btn" class="submit-btn" onclick="checkChalAnswer()" disabled>送出答案</button>
                 
                 <!-- 快速回饋顯示區 -->
-                <div id="chal-quick-feedback" style="text-align:center; font-weight:bold; font-size:1.2rem; height: 1.5em; margin-top:15px; transition: opacity 0.3s;"></div>
+                <div id="chal-quick-feedback" style="text-align:center; font-weight:bold; font-size:1.15rem; min-height: 2.5em; margin-top:15px; transition: opacity 0.3s; line-height: 1.4;"></div>
             </div>
 
             <!-- 結果畫面 -->
@@ -913,12 +913,12 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             chalTotal++;
             if (isCorrect) {
                 chalCorrect++;
-                showChalFeedback(true);
+                showChalFeedback(true, actual);
             } else {
                 let actualText = actual.isPpt ? `會沉澱，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
                 let userText = chalGuessPpt ? `會沉澱 (${chalGuessColor})` : `不會沉澱`;
                 recordMistake(actual, actualText, userText);
-                showChalFeedback(false);
+                showChalFeedback(false, actual);
             }
 
             incrementPracticeCount(); // 挑戰模式也計入總成就
@@ -926,15 +926,21 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             nextChalQuestion();
         }
 
-        function showChalFeedback(isCorrect) {
+        function showChalFeedback(isCorrect, actual) {
             const fb = document.getElementById('chal-quick-feedback');
+            
+            // 建立包含化學式與狀態的答案字串
+            let ansText = actual.isPpt ? `${actual.compoundHtml} (${actual.color}沉澱)` : `${actual.compoundHtml} (可溶不沉澱)`;
+
             if (isCorrect) {
-                fb.innerHTML = '<span style="color: var(--correct);">⭕ 答對了！</span>';
+                fb.innerHTML = `<span style="color: var(--correct);">⭕ 答對了！<br>正解：${ansText}</span>`;
             } else {
-                fb.innerHTML = '<span style="color: var(--wrong);">❌ 答錯了！已記錄至錯題本。</span>';
+                fb.innerHTML = `<span style="color: var(--wrong);">❌ 答錯了！<br>正解：${ansText}</span>`;
             }
+
+            // 稍微延長顯示時間到 2.5 秒，讓玩家有時間看清楚
             if (fb.timeoutId) clearTimeout(fb.timeoutId);
-            fb.timeoutId = setTimeout(() => { fb.innerHTML = ''; }, 1500);
+            fb.timeoutId = setTimeout(() => { fb.innerHTML = ''; }, 2500);
         }
 
         function endChallenge() {
