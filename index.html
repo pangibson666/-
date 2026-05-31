@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V2.1</title>
+    <title>沉澱試煉 V2.2</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -52,6 +52,11 @@
         .next-btn { display: none; width: 100%; padding: 15px; background: #2C3E50; color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .next-btn:hover { background: #1a252f; }
 
+        /* Records & New Record Animation */
+        .record-text { font-size: 0.95rem; color: #555; margin-top: 8px; background: #f9f9f9; padding: 10px; border-radius: 6px; line-height: 1.6; border: 1px dashed #ccc; text-align: left; }
+        .new-record-msg { color: #E67E22; font-weight: bold; font-size: 1.3rem; margin-top: 10px; animation: bounce 0.5s infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
         /* Settings & Mistakes */
         .info-text { font-size: 0.95rem; color: #666; margin-bottom: 15px; }
         .settings-group { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -74,7 +79,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V2.1</header>
+    <header>沉澱試煉 V2.2</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -113,10 +118,23 @@
             <div id="challenge-start-screen" class="card">
                 <h2 style="color: var(--primary);">⏱️ 限時挑戰模式</h2>
                 <p style="font-size: 1.1rem; color: #555; margin-bottom: 20px;">選擇挑戰時間，在時限內盡可能答對越多題目！<br>不須等待回饋畫面，答錯的題目會自動加入錯題本中。</p>
-                <div class="btn-group" style="flex-direction: column; gap: 15px; align-items: center;">
-                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(30)">🔥 30 秒 極速挑戰</button>
-                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(60)">⚡ 1 分鐘 專注挑戰</button>
-                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(180)">🏆 3 分鐘 耐力挑戰</button>
+                <div class="btn-group" style="flex-direction: column; gap: 20px; align-items: center;">
+                    
+                    <div style="width: 100%; max-width: 320px;">
+                        <button class="btn" style="width: 100%; padding: 15px;" onclick="startChallenge(30)">🔥 30 秒 極速挑戰</button>
+                        <div id="record-30" class="record-text"></div>
+                    </div>
+                    
+                    <div style="width: 100%; max-width: 320px;">
+                        <button class="btn" style="width: 100%; padding: 15px;" onclick="startChallenge(60)">⚡ 1 分鐘 專注挑戰</button>
+                        <div id="record-60" class="record-text"></div>
+                    </div>
+
+                    <div style="width: 100%; max-width: 320px;">
+                        <button class="btn" style="width: 100%; padding: 15px;" onclick="startChallenge(180)">🏆 3 分鐘 耐力挑戰</button>
+                        <div id="record-180" class="record-text"></div>
+                    </div>
+
                 </div>
             </div>
 
@@ -145,6 +163,10 @@
             <!-- 結果畫面 -->
             <div id="challenge-result-screen" class="card" style="display:none;">
                 <h2 style="font-size: 2rem; margin-bottom: 10px;">🎉 挑戰結束！</h2>
+                
+                <!-- 破紀錄提示區 -->
+                <div id="res-new-record" class="new-record-msg"></div>
+
                 <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0;">
                     <p style="font-size:1.3rem; margin: 10px 0;">總答題數：<span id="res-total" style="font-weight:bold; font-size: 1.5rem;">0</span></p>
                     <p style="font-size:1.3rem; margin: 10px 0;">正確題數：<span id="res-correct" style="font-weight:bold; color:var(--correct); font-size: 1.5rem;">0</span></p>
@@ -610,10 +632,19 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
         let anionsMap = {};
         let uniqueSimplifiedColors = new Set();
         
-        // 計數器全域變數
+        // 全域變數 - 練習計數與錯題
         let practiceCount = parseInt(localStorage.getItem('chemPracticeCountV2')) || 0;
+        let mistakes = JSON.parse(localStorage.getItem('chemMistakesV2')) || [];
+        
+        // 全域變數 - 挑戰紀錄
+        let challengeRecords = JSON.parse(localStorage.getItem('chemChalRecordsV2_2')) || {
+            30: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} },
+            60: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} },
+            180: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} }
+        };
 
-        // 挑戰模式全域變數
+        // 挑戰模式狀態
+        let chalInitialTime = 0;
         let chalTimerInterval = null;
         let chalTimeLeft = 0;
         let chalTotal = 0;
@@ -667,7 +698,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
         }
 
         let selectedCations = [], selectedAnions = [];
-        let mistakes = JSON.parse(localStorage.getItem('chemMistakesV2')) || [];
         let currentQ = null, userGuessPpt = null, userGuessColor = null;
 
         function init() {
@@ -682,6 +712,7 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             renderSettings();
             buildColorButtons('color-options', selectColor);
             buildColorButtons('chal-color-options', selectChalColor);
+            renderChallengeRecords();
             nextQuestion();
         }
 
@@ -692,6 +723,8 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 document.getElementById('challenge-active-screen').style.display = 'none';
                 document.getElementById('challenge-result-screen').style.display = 'none';
                 document.getElementById('challenge-start-screen').style.display = 'block';
+            } else {
+                renderChallengeRecords();
             }
 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -820,6 +853,19 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
         }
 
         /* ----- 限時挑戰模式邏輯 ----- */
+        function renderChallengeRecords() {
+            [30, 60, 180].forEach(time => {
+                const rec = challengeRecords[time];
+                const rEl = document.getElementById(`record-${time}`);
+                if (!rEl) return;
+                
+                let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
+                let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
+                
+                rEl.innerHTML = `🏆 最多答對: <span style="color:var(--primary); font-weight:bold;">${textC}</span><br>🎯 最高答對率: <span style="color:var(--correct); font-weight:bold;">${textA}</span>`;
+            });
+        }
+
         function startChallenge(seconds) {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
             if (validQuestions.length === 0) {
@@ -831,6 +877,7 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             document.getElementById('challenge-result-screen').style.display = 'none';
             document.getElementById('challenge-active-screen').style.display = 'block';
 
+            chalInitialTime = seconds;
             chalTimeLeft = seconds;
             chalTotal = 0;
             chalCorrect = 0;
@@ -938,7 +985,7 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 fb.innerHTML = `<span style="color: var(--wrong);">❌ 答錯了！<br>正解：${ansText}</span>`;
             }
 
-            // 稍微延長顯示時間到 2.5 秒，讓玩家有時間看清楚
+            // 延長顯示時間到 2.5 秒，讓玩家有時間看清楚
             if (fb.timeoutId) clearTimeout(fb.timeoutId);
             fb.timeoutId = setTimeout(() => { fb.innerHTML = ''; }, 2500);
         }
@@ -953,9 +1000,45 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             
             let acc = chalTotal > 0 ? Math.round((chalCorrect / chalTotal) * 100) : 0;
             document.getElementById('res-accuracy').innerText = `${acc}%`;
+
+            // 檢查是否打破紀錄
+            let rec = challengeRecords[chalInitialTime];
+            let isNewMaxC = false;
+            let isNewMaxA = false;
+
+            // 檢查最高題數
+            if (chalCorrect > rec.maxC.c) {
+                rec.maxC = { c: chalCorrect, t: chalTotal };
+                isNewMaxC = true;
+            }
+
+            // 檢查最高答對率 (答對率更高，或答對率相同但作答總數更多)
+            if (chalTotal > 0) {
+                if (acc > rec.maxA.a || (acc === rec.maxA.a && chalTotal > rec.maxA.t) || rec.maxA.t === 0) {
+                    rec.maxA = { c: chalCorrect, t: chalTotal, a: acc };
+                    isNewMaxA = true;
+                }
+            }
+
+            // 儲存新紀錄
+            challengeRecords[chalInitialTime] = rec;
+            localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
+
+            // 顯示破紀錄訊息
+            let msgEl = document.getElementById('res-new-record');
+            if (isNewMaxC && isNewMaxA) {
+                msgEl.innerHTML = '🌟 太猛了！題數與答對率雙雙破紀錄啦！ 🌟';
+            } else if (isNewMaxC) {
+                msgEl.innerHTML = '🔥 恭喜！你的最高答對題數破紀錄了！ 🔥';
+            } else if (isNewMaxA) {
+                msgEl.innerHTML = '🎯 恭喜！你的最高答對率破紀錄了！ 🎯';
+            } else {
+                msgEl.innerHTML = '';
+            }
         }
 
         function resetChallengeScreen() {
+            renderChallengeRecords();
             document.getElementById('challenge-result-screen').style.display = 'none';
             document.getElementById('challenge-start-screen').style.display = 'block';
         }
