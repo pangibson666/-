@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V1.8</title>
+    <title>沉澱試煉 V2.0</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -17,7 +17,7 @@
         body { margin: 0; background-color: var(--bg-color); color: var(--text-main); }
         header { background-color: var(--primary); color: white; padding: 1rem; text-align: center; font-size: 1.2rem; font-weight: bold; }
         nav { display: flex; justify-content: center; background-color: #357ABD; position: sticky; top: 0; z-index: 100; }
-        nav button { background: none; border: none; color: white; padding: 12px 20px; font-size: 1rem; cursor: pointer; transition: 0.3s; flex: 1; max-width: 150px; }
+        nav button { background: none; border: none; color: white; padding: 12px 10px; font-size: 1rem; cursor: pointer; transition: 0.3s; flex: 1; max-width: 180px; }
         nav button:hover, nav button.active { background-color: rgba(255,255,255,0.25); border-bottom: 3px solid white; }
         
         .container { max-width: 700px; margin: 20px auto; padding: 0 15px; }
@@ -25,7 +25,7 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Practice View */
+        /* Practice & Challenge View */
         .card { background: var(--card-bg); border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px; text-align: center; margin-bottom: 20px; position: relative; }
         .ion-display { font-size: 2.5rem; font-weight: bold; letter-spacing: 2px; margin: 20px 0; color: var(--primary); }
         
@@ -74,9 +74,10 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V1.8</header>
+    <header>沉澱試煉 V2.0</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
+        <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
         <button id="nav-settings" onclick="switchTab('settings')">⚙️ 設定區</button>
         <button id="nav-mistakes" onclick="switchTab('mistakes')">📖 錯題本</button>
     </nav>
@@ -103,6 +104,57 @@
                 <button id="submit-btn" class="submit-btn" onclick="checkAnswer()" disabled>送出答案</button>
                 <div id="feedback" class="feedback"></div>
                 <button id="next-btn" class="next-btn" onclick="nextQuestion()">下一題 ➔</button>
+            </div>
+        </div>
+
+        <!-- 限時挑戰區 -->
+        <div id="view-challenge" class="view">
+            <!-- 選擇難度畫面 -->
+            <div id="challenge-start-screen" class="card">
+                <h2 style="color: var(--primary);">⏱️ 限時挑戰模式</h2>
+                <p style="font-size: 1.1rem; color: #555; margin-bottom: 20px;">選擇挑戰時間，在時限內盡可能答對越多題目！<br>不須等待回饋畫面，答錯的題目會自動加入錯題本中。</p>
+                <div class="btn-group" style="flex-direction: column; gap: 15px; align-items: center;">
+                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(30)">🔥 30 秒 極速挑戰</button>
+                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(60)">⚡ 1 分鐘 專注挑戰</button>
+                    <button class="btn" style="width: 100%; max-width: 300px; padding: 15px;" onclick="startChallenge(180)">🏆 3 分鐘 耐力挑戰</button>
+                </div>
+            </div>
+
+            <!-- 作答畫面 -->
+            <div id="challenge-active-screen" class="card" style="display:none;">
+                <div style="display:flex; justify-content:space-between; font-size:1.3rem; font-weight:bold; margin-bottom:10px; border-bottom: 2px dashed #eee; padding-bottom: 10px;">
+                    <span id="challenge-timer" style="color:var(--wrong);">⏱️ 00:00</span>
+                    <span id="challenge-score" style="color:var(--primary);">🎯 0 / 0</span>
+                </div>
+                
+                <div id="challenge-ion-display" class="ion-display">載入中...</div>
+                
+                <div class="btn-group">
+                    <button class="btn" id="btn-chal-precip-no" onclick="selectChalPrecipitate(false)">不會沉澱</button>
+                    <button class="btn" id="btn-chal-precip-yes" onclick="selectChalPrecipitate(true)">會沉澱</button>
+                </div>
+
+                <div id="chal-color-options" class="color-options"></div>
+
+                <button id="chal-submit-btn" class="submit-btn" onclick="checkChalAnswer()" disabled>送出答案</button>
+                
+                <!-- 快速回饋顯示區 -->
+                <div id="chal-quick-feedback" style="text-align:center; font-weight:bold; font-size:1.2rem; height: 1.5em; margin-top:15px; transition: opacity 0.3s;"></div>
+            </div>
+
+            <!-- 結果畫面 -->
+            <div id="challenge-result-screen" class="card" style="display:none;">
+                <h2 style="font-size: 2rem; margin-bottom: 10px;">🎉 挑戰結束！</h2>
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                    <p style="font-size:1.3rem; margin: 10px 0;">總答題數：<span id="res-total" style="font-weight:bold; font-size: 1.5rem;">0</span></p>
+                    <p style="font-size:1.3rem; margin: 10px 0;">正確題數：<span id="res-correct" style="font-weight:bold; color:var(--correct); font-size: 1.5rem;">0</span></p>
+                    <p style="font-size:1.3rem; margin: 10px 0;">答對率：<span id="res-accuracy" style="font-weight:bold; color:var(--primary); font-size: 1.5rem;">0%</span></p>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn" style="flex: 1; margin-top: 0;" onclick="resetChallengeScreen()">🔄 再玩一次</button>
+                    <button class="submit-btn" style="flex: 1; margin-top: 0; background: #2C3E50;" onclick="switchTab('mistakes')">📖 查看錯題</button>
+                </div>
             </div>
         </div>
 
@@ -561,6 +613,15 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
         // 計數器全域變數
         let practiceCount = parseInt(localStorage.getItem('chemPracticeCountV2')) || 0;
 
+        // 挑戰模式全域變數
+        let chalTimerInterval = null;
+        let chalTimeLeft = 0;
+        let chalTotal = 0;
+        let chalCorrect = 0;
+        let chalCurrentQ = null;
+        let chalGuessPpt = null;
+        let chalGuessColor = null;
+
         function formatFormula(texStr) {
             let s = texStr.replace(/\$/g, '').trim();
             s = s.replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>');
@@ -616,15 +677,23 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             selectedCations = savedC || Object.keys(cationsMap);
             selectedAnions = savedA || Object.keys(anionsMap);
 
-            // 更新計數器畫面
             document.getElementById('practice-count').innerText = practiceCount;
 
             renderSettings();
-            renderColorButtons();
+            buildColorButtons('color-options', selectColor);
+            buildColorButtons('chal-color-options', selectChalColor);
             nextQuestion();
         }
 
         function switchTab(tabId) {
+            // 切換時清除挑戰模式的計時器狀態
+            if (tabId !== 'challenge') {
+                if (chalTimerInterval) clearInterval(chalTimerInterval);
+                document.getElementById('challenge-active-screen').style.display = 'none';
+                document.getElementById('challenge-result-screen').style.display = 'none';
+                document.getElementById('challenge-start-screen').style.display = 'block';
+            }
+
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
             document.getElementById(`view-${tabId}`).classList.add('active');
@@ -632,8 +701,9 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             if (tabId === 'mistakes') renderMistakes();
         }
 
-        function renderColorButtons() {
-            const container = document.getElementById('color-options');
+        function buildColorButtons(containerId, clickCallback) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
             container.innerHTML = '';
             
             let colorsArray = Array.from(uniqueSimplifiedColors).sort((a, b) => {
@@ -650,11 +720,12 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 btn.style.backgroundColor = style.bg;
                 btn.style.color = style.text;
                 btn.style.border = `2px solid ${style.border}`;
-                btn.onclick = () => selectColor(col, btn);
+                btn.onclick = () => clickCallback(col, btn);
                 container.appendChild(btn);
             });
         }
 
+        /* ----- 一般練習模式邏輯 ----- */
         function nextQuestion() {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
 
@@ -668,7 +739,7 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             userGuessColor = null;
             document.getElementById('btn-precip-no').classList.remove('selected');
             document.getElementById('btn-precip-yes').classList.remove('selected');
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
             document.getElementById('color-options').style.display = 'none';
             document.getElementById('color-hint').style.display = 'none';
             
@@ -694,14 +765,14 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 document.getElementById('color-options').style.display = 'none';
                 document.getElementById('color-hint').style.display = 'none';
                 userGuessColor = null;
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
                 document.getElementById('submit-btn').disabled = false;
             }
         }
 
         function selectColor(colorName, btnElement) {
             userGuessColor = colorName;
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
             btnElement.classList.add('selected');
             document.getElementById('submit-btn').disabled = false;
         }
@@ -739,12 +810,151 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
                 recordMistake(actual, actualText, userText);
             }
 
-            // 更新與儲存計數器
+            incrementPracticeCount();
+        }
+
+        function incrementPracticeCount() {
             practiceCount++;
             localStorage.setItem('chemPracticeCountV2', practiceCount);
             document.getElementById('practice-count').innerText = practiceCount;
         }
 
+        /* ----- 限時挑戰模式邏輯 ----- */
+        function startChallenge(seconds) {
+            const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
+            if (validQuestions.length === 0) {
+                alert("你勾選的組合沒有對應的資料，請去設定區多勾選一些喔！");
+                return;
+            }
+
+            document.getElementById('challenge-start-screen').style.display = 'none';
+            document.getElementById('challenge-result-screen').style.display = 'none';
+            document.getElementById('challenge-active-screen').style.display = 'block';
+
+            chalTimeLeft = seconds;
+            chalTotal = 0;
+            chalCorrect = 0;
+            updateChalScore();
+            updateChalTimerDisplay();
+            document.getElementById('chal-quick-feedback').innerHTML = '';
+
+            clearInterval(chalTimerInterval);
+            chalTimerInterval = setInterval(() => {
+                chalTimeLeft--;
+                updateChalTimerDisplay();
+                if (chalTimeLeft <= 0) {
+                    endChallenge();
+                }
+            }, 1000);
+
+            nextChalQuestion();
+        }
+
+        function updateChalTimerDisplay() {
+            let m = Math.floor(chalTimeLeft / 60);
+            let s = chalTimeLeft % 60;
+            document.getElementById('challenge-timer').innerText = `⏱️ ${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateChalScore() {
+            document.getElementById('challenge-score').innerText = `🎯 ${chalCorrect} / ${chalTotal}`;
+        }
+
+        function nextChalQuestion() {
+            const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
+            chalCurrentQ = validQuestions[Math.floor(Math.random() * validQuestions.length)];
+            
+            document.getElementById('challenge-ion-display').innerHTML = `${chalCurrentQ.cHtml} &nbsp;+&nbsp; ${chalCurrentQ.aHtml}`;
+            
+            chalGuessPpt = null;
+            chalGuessColor = null;
+            
+            document.getElementById('btn-chal-precip-no').classList.remove('selected');
+            document.getElementById('btn-chal-precip-yes').classList.remove('selected');
+            document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+            
+            document.getElementById('chal-color-options').style.display = 'none';
+            document.getElementById('chal-submit-btn').disabled = true;
+        }
+
+        function selectChalPrecipitate(isPpt) {
+            chalGuessPpt = isPpt;
+            document.getElementById('btn-chal-precip-no').classList.toggle('selected', !isPpt);
+            document.getElementById('btn-chal-precip-yes').classList.toggle('selected', isPpt);
+            
+            if (isPpt) {
+                document.getElementById('chal-color-options').style.display = 'flex';
+                document.getElementById('chal-submit-btn').disabled = (chalGuessColor === null);
+            } else {
+                document.getElementById('chal-color-options').style.display = 'none';
+                chalGuessColor = null;
+                document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('chal-submit-btn').disabled = false;
+            }
+        }
+
+        function selectChalColor(colorName, btnElement) {
+            chalGuessColor = colorName;
+            document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            document.getElementById('chal-submit-btn').disabled = false;
+        }
+
+        function checkChalAnswer() {
+            const actual = chalCurrentQ;
+            let isCorrect = false;
+
+            if (!chalGuessPpt && !actual.isPpt) {
+                isCorrect = true;
+            } else if (chalGuessPpt && actual.isPpt && chalGuessColor === actual.simplifiedColor) {
+                isCorrect = true;
+            }
+
+            chalTotal++;
+            if (isCorrect) {
+                chalCorrect++;
+                showChalFeedback(true);
+            } else {
+                let actualText = actual.isPpt ? `會沉澱，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
+                let userText = chalGuessPpt ? `會沉澱 (${chalGuessColor})` : `不會沉澱`;
+                recordMistake(actual, actualText, userText);
+                showChalFeedback(false);
+            }
+
+            incrementPracticeCount(); // 挑戰模式也計入總成就
+            updateChalScore();
+            nextChalQuestion();
+        }
+
+        function showChalFeedback(isCorrect) {
+            const fb = document.getElementById('chal-quick-feedback');
+            if (isCorrect) {
+                fb.innerHTML = '<span style="color: var(--correct);">⭕ 答對了！</span>';
+            } else {
+                fb.innerHTML = '<span style="color: var(--wrong);">❌ 答錯了！已記錄至錯題本。</span>';
+            }
+            if (fb.timeoutId) clearTimeout(fb.timeoutId);
+            fb.timeoutId = setTimeout(() => { fb.innerHTML = ''; }, 1500);
+        }
+
+        function endChallenge() {
+            clearInterval(chalTimerInterval);
+            document.getElementById('challenge-active-screen').style.display = 'none';
+            document.getElementById('challenge-result-screen').style.display = 'block';
+            
+            document.getElementById('res-total').innerText = chalTotal;
+            document.getElementById('res-correct').innerText = chalCorrect;
+            
+            let acc = chalTotal > 0 ? Math.round((chalCorrect / chalTotal) * 100) : 0;
+            document.getElementById('res-accuracy').innerText = `${acc}%`;
+        }
+
+        function resetChallengeScreen() {
+            document.getElementById('challenge-result-screen').style.display = 'none';
+            document.getElementById('challenge-start-screen').style.display = 'block';
+        }
+
+        /* ----- 錯題本與設定邏輯 ----- */
         function recordMistake(q, actualText, userText) {
             const htmlText = `${q.cHtml} + ${q.aHtml}`;
             mistakes = mistakes.filter(m => m.htmlText !== htmlText);
