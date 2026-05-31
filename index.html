@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V2.5</title>
+    <title>沉澱試煉 V3.0</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -57,16 +57,9 @@
         .new-record-msg { color: #E67E22; font-weight: bold; font-size: 1.3rem; margin-top: 10px; animation: bounce 0.5s infinite alternate; }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
-        /* Settings & Mistakes */
+        /* Mistakes */
         .info-text { font-size: 0.95rem; color: #666; margin-bottom: 15px; }
-        .settings-group { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .settings-group h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; }
-        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
-        .checkbox-label { display: flex; align-items: center; cursor: pointer; padding: 5px; border-radius: 5px; transition: 0.2s; }
-        .checkbox-label:hover { background: #f0f8ff; }
-        .checkbox-label input { margin-right: 8px; transform: scale(1.2); }
-        .save-settings-btn { width: 100%; padding: 15px; background: var(--correct); color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; position: sticky; bottom: 20px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
-
+        
         .mistake-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid var(--wrong); }
         .mistake-header { font-size: 1.3rem; font-weight: bold; margin-bottom: 8px; color: var(--primary); }
         .mistake-detail { color: #555; font-size: 1rem; line-height: 1.5; }
@@ -79,17 +72,16 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V2.5</header>
+    <header>沉澱試煉 V3.0</header>
     <nav>
-        <button id="nav-practice" onclick="switchTab('practice')">📝 練習區</button>
+        <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
-        <button id="nav-settings" class="active" onclick="switchTab('settings')">⚙️ 設定區</button>
         <button id="nav-mistakes" onclick="switchTab('mistakes')">📖 錯題本</button>
     </nav>
 
     <div class="container">
         <!-- 練習區 -->
-        <div id="view-practice" class="view">
+        <div id="view-practice" class="view active">
             <div class="card">
                 <!-- 累積成就顯示區 -->
                 <div style="text-align: right; color: #888; font-size: 0.95rem; font-weight: bold; margin-bottom: -10px;">
@@ -180,21 +172,6 @@
             </div>
         </div>
 
-        <!-- 設定區 -->
-        <div id="view-settings" class="view active">
-            <p class="info-text">💡 勾選你想練習的離子組合，未勾選的離子不會出現在題目中。<br>※ 題目只會出現「資料庫中存在」的組合。</p>
-	        <button onclick="setHighSchool()" style="margin-bottom: 15px; padding: 10px 15px; background: #8E44AD; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 一鍵套用高中課內範圍</button>
-            <div class="settings-group">
-                <h3>陽離子 (Cations) <button onclick="toggleAll('cations', true)" style="font-size:0.8rem; margin-left:10px;">全選</button> <button onclick="toggleAll('cations', false)" style="font-size:0.8rem;">全不選</button></h3>
-                <div id="cations-settings" class="checkbox-grid"></div>
-            </div>
-            <div class="settings-group">
-                <h3>陰離子 (Anions) <button onclick="toggleAll('anions', true)" style="font-size:0.8rem; margin-left:10px;">全選</button> <button onclick="toggleAll('anions', false)" style="font-size:0.8rem;">全不選</button></h3>
-                <div id="anions-settings" class="checkbox-grid"></div>
-            </div>
-            <button class="save-settings-btn" onclick="saveSettings()">💾 儲存設定並開始練習</button>
-        </div>
-
         <!-- 錯題本 -->
         <div id="view-mistakes" class="view">
             <div class="action-btns">
@@ -219,380 +196,239 @@
     <script>
         // --- 資料庫 ---
         const rawTextData = `
-$Ag^+$, $Cl^-$, $AgCl$, 白
-$Ag^+$, $Br^-$, $AgBr$, 淡黃
-$Ag^+$, $I^-$, $AgI$, 黃
-$Pb^{2+}$, $Cl^-$, $PbCl_2$, 白
-$Pb^{2+}$, $Br^-$, $PbBr_2$, 白
-$Pb^{2+}$, $I^-$, $PbI_2$, 金黃
-$Hg_2^{2+}$, $Cl^-$, $Hg_2Cl_2$, 白
-$Hg_2^{2+}$, $Br^-$, $Hg_2Br_2$, 微黃
-$Hg_2^{2+}$, $I^-$, $Hg_2I_2$, 黃綠
-$Cu^+$, $Cl^-$, $CuCl$, 白
-$Cu^+$, $Br^-$, $CuBr$, 白
-$Cu^+$, $I^-$, $CuI$, 白
-$Cu^{2+}$, $I^-$, $CuI$, 白
-$Tl^+$, $Cl^-$, $TlCl$, 白
-$Tl^+$, $Br^-$, $TlBr$, 淺黃
-$Tl^+$, $I^-$, $TlI$, 黃
-$Hg^{2+}$, $I^-$, $HgI_2$, 紅
-$Bi^{3+}$, $I^-$, $BiI_3$, 黑褐
-$Ag^+$, $S^{2-}$, $Ag_2S$, 黑
-$Pb^{2+}$, $S^{2-}$, $PbS$, 黑
-$Hg_2^{2+}$, $S^{2-}$, $Hg_2S$, 黑
-$Hg^{2+}$, $S^{2-}$, $HgS$, 黑
-$Cu^{2+}$, $S^{2-}$, $CuS$, 黑
-$Cu^+$, $S^{2-}$, $Cu_2S$, 黑
-$Bi^{3+}$, $S^{2-}$, $Bi_2S_3$, 棕黑
-$Cd^{2+}$, $S^{2-}$, $CdS$, 黃
-$Sn^{2+}$, $S^{2-}$, $SnS$, 棕
-$Sn^{4+}$, $S^{2-}$, $SnS_2$, 黃
-$Sb^{3+}$, $S^{2-}$, $Sb_2S_3$, 橘紅
-$Sb^{5+}$, $S^{2-}$, $Sb_2S_5$, 橘
-$As^{3+}$, $S^{2-}$, $As_2S_3$, 黃
-$As^{5+}$, $S^{2-}$, $As_2S_5$, 黃
-$Fe^{2+}$, $S^{2-}$, $FeS$, 黑
-$Co^{2+}$, $S^{2-}$, $CoS$, 黑
-$Ni^{2+}$, $S^{2-}$, $NiS$, 黑
-$Mn^{2+}$, $S^{2-}$, $MnS$, 肉色
-$Zn^{2+}$, $S^{2-}$, $ZnS$, 白
-$Ag^+$, $OH^-$, $Ag_2O$, 棕褐
-$Pb^{2+}$, $OH^-$, $Pb(OH)_2$, 白
-$Hg_2^{2+}$, $OH^-$, $Hg_2O$, 黑
-$Hg^{2+}$, $OH^-$, $HgO$, 黃
-$Cu^{2+}$, $OH^-$, $Cu(OH)_2$, 淺藍
-$Bi^{3+}$, $OH^-$, $Bi(OH)_3$, 白
-$Cd^{2+}$, $OH^-$, $Cd(OH)_2$, 白
-$Fe^{2+}$, $OH^-$, $Fe(OH)_2$, 灰綠
-$Fe^{3+}$, $OH^-$, $Fe(OH)_3$, 紅褐
-$Co^{2+}$, $OH^-$, $Co(OH)_2$, 粉紅
-$Ni^{2+}$, $OH^-$, $Ni(OH)_2$, 蘋果綠
-$Mn^{2+}$, $OH^-$, $Mn(OH)_2$, 白
-$Zn^{2+}$, $OH^-$, $Zn(OH)_2$, 白
-$Al^{3+}$, $OH^-$, $Al(OH)_3$, 白
-$Cr^{3+}$, $OH^-$, $Cr(OH)_3$, 灰綠
-$Sn^{2+}$, $OH^-$, $Sn(OH)_2$, 白
-$Sn^{4+}$, $OH^-$, $Sn(OH)_4$, 白
-$Mg^{2+}$, $OH^-$, $Mg(OH)_2$, 白
-$Ca^{2+}$, $OH^-$, $Ca(OH)_2$, 白
-$Nd^{3+}$, $OH^-$, $Nd(OH)_3$, 淡紫
-$Pr^{3+}$, $OH^-$, $Pr(OH)_3$, 綠
-$Ce^{3+}$, $OH^-$, $Ce(OH)_3$, 白
-$La^{3+}$, $OH^-$, $La(OH)_3$, 白
-$Zr^{4+}$, $OH^-$, $Zr(OH)_4$, 白
-$Ag^+$, $CO_3^{2-}$, $Ag_2CO_3$, 淡黃
-$Pb^{2+}$, $CO_3^{2-}$, $PbCO_3$, 白
-$Hg_2^{2+}$, $CO_3^{2-}$, $Hg_2CO_3$, 黃
-$Hg^{2+}$, $CO_3^{2-}$, $HgCO_3$, 棕紅
-$Cu^{2+}$, $CO_3^{2-}$, $Cu_2(OH)_2CO_3$, 藍綠
-$Cd^{2+}$, $CO_3^{2-}$, $CdCO_3$, 白
-$Fe^{2+}$, $CO_3^{2-}$, $FeCO_3$, 白
-$Co^{2+}$, $CO_3^{2-}$, $CoCO_3$, 粉紅
-$Ni^{2+}$, $CO_3^{2-}$, $NiCO_3$, 綠
-$Mn^{2+}$, $CO_3^{2-}$, $MnCO_3$, 粉白
-$Zn^{2+}$, $CO_3^{2-}$, $ZnCO_3$, 白
-$Ba^{2+}$, $CO_3^{2-}$, $BaCO_3$, 白
-$Sr^{2+}$, $CO_3^{2-}$, $SrCO_3$, 白
-$Ca^{2+}$, $CO_3^{2-}$, $CaCO_3$, 白
-$Mg^{2+}$, $CO_3^{2-}$, $MgCO_3$, 白
-$Bi^{3+}$, $CO_3^{2-}$, $(BiO)_2CO_3$, 白
-$Pb^{2+}$, $SO_4^{2-}$, $PbSO_4$, 白
-$Ba^{2+}$, $SO_4^{2-}$, $BaSO_4$, 白
-$Sr^{2+}$, $SO_4^{2-}$, $SrSO_4$, 白
-$Ca^{2+}$, $SO_4^{2-}$, $CaSO_4$, 白（微溶）
-$Ag^+$, $SO_4^{2-}$, $Ag_2SO_4$, 白（微溶）
-$Ca^{2+}$, $OH^-$, $Ca(OH)_2$, 白（微溶）
-$Hg_2^{2+}$, $SO_4^{2-}$, $Hg_2SO_4$, 白
-$Ag^+$, $CrO_4^{2-}$, $Ag_2CrO_4$, 磚紅
-$Pb^{2+}$, $CrO_4^{2-}$, $PbCrO_4$, 黃
-$Hg_2^{2+}$, $CrO_4^{2-}$, $Hg_2CrO_4$, 磚紅
-$Ba^{2+}$, $CrO_4^{2-}$, $BaCrO_4$, 黃
-$Sr^{2+}$, $CrO_4^{2-}$, $SrCrO_4$, 黃
-$Ca^{2+}$, $CrO_4^{2-}$, $CaCrO_4$, 黃
-$Cu^{2+}$, $CrO_4^{2-}$, $CuCrO_4$, 紅褐
-$Cd^{2+}$, $CrO_4^{2-}$, $CdCrO_4$, 黃
-$Zn^{2+}$, $CrO_4^{2-}$, $ZnCrO_4$, 黃
-$Co^{2+}$, $CrO_4^{2-}$, $CoCrO_4$, 灰黑
-$Ni^{2+}$, $CrO_4^{2-}$, $NiCrO_4$, 黃綠
-$Bi^{3+}$, $CrO_4^{2-}$, $(BiO)_2CrO_4$, 黃
-$Tl^+$, $CrO_4^{2-}$, $Tl_2CrO_4$, 黃
-$Ag^+$, $PO_4^{3-}$, $Ag_3PO_4$, 黃
-$Pb^{2+}$, $PO_4^{3-}$, $Pb_3(PO_4)_2$, 白
-$Cu^{2+}$, $PO_4^{3-}$, $Cu_3(PO_4)_2$, 藍
-$Cd^{2+}$, $PO_4^{3-}$, $Cd_3(PO_4)_2$, 白
-$Fe^{2+}$, $PO_4^{3-}$, $Fe_3(PO_4)_2$, 白
-$Fe^{3+}$, $PO_4^{3-}$, $FePO_4$, 黃白
-$Co^{2+}$, $PO_4^{3-}$, $Co_3(PO_4)_2$, 粉紫
-$Ni^{2+}$, $PO_4^{3-}$, $Ni_3(PO_4)_2$, 淺綠
-$Mn^{2+}$, $PO_4^{3-}$, $Mn_3(PO_4)_2$, 粉白
-$Zn^{2+}$, $PO_4^{3-}$, $Zn_3(PO_4)_2$, 白
-$Al^{3+}$, $PO_4^{3-}$, $AlPO_4$, 白
-$Cr^{3+}$, $PO_4^{3-}$, $CrPO_4$, 灰綠
-$Ba^{2+}$, $PO_4^{3-}$, $Ba_3(PO_4)_2$, 白
-$Sr^{2+}$, $PO_4^{3-}$, $Sr_3(PO_4)_2$, 白
-$Ca^{2+}$, $PO_4^{3-}$, $Ca_3(PO_4)_2$, 白
-$Mg^{2+}$, $PO_4^{3-}$, $Mg_3(PO_4)_2$, 白
-$Bi^{3+}$, $PO_4^{3-}$, $BiPO_4$, 白
-$Ce^{3+}$, $PO_4^{3-}$, $CePO_4$, 白
-$Ag^+$, $SO_3^{2-}$, $Ag_2SO_3$, 白
-$Pb^{2+}$, $SO_3^{2-}$, $PbSO_3$, 白
-$Ba^{2+}$, $SO_3^{2-}$, $BaSO_3$, 白
-$Sr^{2+}$, $SO_3^{2-}$, $SrSO_3$, 白
-$Ca^{2+}$, $SO_3^{2-}$, $CaSO_3$, 白
-$Mg^{2+}$, $SO_3^{2-}$, $MgSO_3$, 白
-$Cu^{2+}$, $SO_3^{2-}$, $CuSO_3$, 白
-$Zn^{2+}$, $SO_3^{2-}$, $ZnSO_3$, 白
-$Cd^{2+}$, $SO_3^{2-}$, $CdSO_3$, 白
-$Co^{2+}$, $SO_3^{2-}$, $CoSO_3$, 粉紅
-$Ni^{2+}$, $SO_3^{2-}$, $NiSO_3$, 綠
-$Mn^{2+}$, $SO_3^{2-}$, $MnSO_3$, 粉白
-$Fe^{2+}$, $SO_3^{2-}$, $FeSO_3$, 白綠
-$Ag^+$, $C_2O_4^{2-}$, $Ag_2C_2O_4$, 白
-$Pb^{2+}$, $C_2O_4^{2-}$, $PbC_2O_4$, 白
-$Cu^{2+}$, $C_2O_4^{2-}$, $CuC_2O_4$, 淺藍
-$Fe^{2+}$, $C_2O_4^{2-}$, $FeC_2O_4$, 淺黃
-$Co^{2+}$, $C_2O_4^{2-}$, $CoC_2O_4$, 粉紅
-$Ni^{2+}$, $C_2O_4^{2-}$, $NiC_2O_4$, 淺綠
-$Mn^{2+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
-$Zn^{2+}$, $C_2O_4^{2-}$, $ZnC_2O_4$, 白
-$Ba^{2+}$, $C_2O_4^{2-}$, $BaC_2O_4$, 白
-$Sr^{2+}$, $C_2O_4^{2-}$, $SrC_2O_4$, 白
-$Ca^{2+}$, $C_2O_4^{2-}$, $CaC_2O_4$, 白
-$Mg^{2+}$, $C_2O_4^{2-}$, $MgC_2O_4$, 白
-$Cd^{2+}$, $C_2O_4^{2-}$, $CdC_2O_4$, 白
-$Mg^{2+}$, $F^-$, $MgF_2$, 白
-$Ca^{2+}$, $F^-$, $CaF_2$, 白
-$Sr^{2+}$, $F^-$, $SrF_2$, 白
-$Ba^{2+}$, $F^-$, $BaF_2$, 白
-$Pb^{2+}$, $F^-$, $PbF_2$, 白
-$Al^{3+}$, $F^-$, $AlF_3$, 白
-$Li^+$, $F^-$, $LiF$, 白
-$Zn^{2+}$, $F^-$, $ZnF_2$, 白
-$Cd^{2+}$, $F^-$, $CdF_2$, 白
-$Cu^{2+}$, $F^-$, $CuF_2$, 淺藍
-$Fe^{2+}$, $F^-$, $FeF_2$, 白
-$Fe^{3+}$, $F^-$, $FeF_3$, 微綠白
-$Co^{2+}$, $F^-$, $CoF_2$, 粉紅
-$Ni^{2+}$, $F^-$, $NiF_2$, 黃綠
-$Mn^{2+}$, $F^-$, $MnF_2$, 淡粉紅
-$Ce^{3+}$, $F^-$, $CeF_3$, 白
-$Ag^+$, $SiO_3^{2-}$, $Ag_2SiO_3$, 黃
-$Pb^{2+}$, $SiO_3^{2-}$, $PbSiO_3$, 白
-$Cu^{2+}$, $SiO_3^{2-}$, $CuSiO_3$, 藍綠
-$Fe^{2+}$, $SiO_3^{2-}$, $FeSiO_3$, 灰綠
-$Co^{2+}$, $SiO_3^{2-}$, $CoSiO_3$, 紫
-$Ni^{2+}$, $SiO_3^{2-}$, $NiSiO_3$, 黃綠
-$Mn^{2+}$, $SiO_3^{2-}$, $MnSiO_3$, 粉紅
-$Zn^{2+}$, $SiO_3^{2-}$, $ZnSiO_3$, 白
-$Ba^{2+}$, $SiO_3^{2-}$, $BaSiO_3$, 白
-$Sr^{2+}$, $SiO_3^{2-}$, $SrSiO_3$, 白
-$Ca^{2+}$, $SiO_3^{2-}$, $CaSiO_3$, 白
-$Mg^{2+}$, $SiO_3^{2-}$, $MgSiO_3$, 白
-$Al^{3+}$, $SiO_3^{2-}$, $Al_2(SiO_3)_3$, 白
-$Ag^+$, $CN^-$, $AgCN$, 白
-$Pb^{2+}$, $CN^-$, $Pb(CN)_2$, 白
-$Cu^{2+}$, $CN^-$, $CuCN$, 白
-$Cu^+$, $CN^-$, $CuCN$, 白
-$Cd^{2+}$, $CN^-$, $Cd(CN)_2$, 白
-$Fe^{2+}$, $CN^-$, $Fe(CN)_2$, 黃
-$Co^{2+}$, $CN^-$, $Co(CN)_2$, 粉紅
-$Ni^{2+}$, $CN^-$, $Ni(CN)_2$, 灰綠
-$Zn^{2+}$, $CN^-$, $Zn(CN)_2$, 白
-$Ag^+$, $SCN^-$, $AgSCN$, 白
-$Pb^{2+}$, $SCN^-$, $Pb(SCN)_2$, 白
-$Cu^+$, $SCN^-$, $CuSCN$, 白
-$Cu^{2+}$, $SCN^-$, $Cu(SCN)_2$, 黑
-$Hg^{2+}$, $SCN^-$, $Hg(SCN)_2$, 白
-$Ag^+$, $AsO_4^{3-}$, $Ag_3AsO_4$, 紅褐
-$Pb^{2+}$, $AsO_4^{3-}$, $Pb_3(AsO_4)_2$, 白
-$Cu^{2+}$, $AsO_4^{3-}$, $Cu_3(AsO_4)_2$, 藍綠
-$Fe^{3+}$, $AsO_4^{3-}$, $FeAsO_4$, 黃白
-$Zn^{2+}$, $AsO_4^{3-}$, $Zn_3(AsO_4)_2$, 白
-$Ca^{2+}$, $AsO_4^{3-}$, $Ca_3(AsO_4)_2$, 白
-$Mg^{2+}$, $AsO_4^{3-}$, $Mg_3(AsO_4)_2$, 白
-$Ba^{2+}$, $AsO_4^{3-}$, $Ba_3(AsO_4)_2$, 白
-$Ni^{2+}$, $AsO_4^{3-}$, $Ni_3(AsO_4)_2$, 綠
-$Co^{2+}$, $AsO_4^{3-}$, $Co_3(AsO_4)_2$, 粉紅
-$Ag^+$, $BO_3^{3-}$, $Ag_3BO_3$, 白
-$Pb^{2+}$, $BO_3^{3-}$, $Pb_3(BO_3)_2$, 白
-$Cu^{2+}$, $BO_3^{3-}$, $Cu_3(BO_3)_2$, 藍
-$Ba^{2+}$, $BO_3^{3-}$, $Ba_3(BO_3)_2$, 白
-$Ca^{2+}$, $BO_3^{3-}$, $Ca_3(BO_3)_2$, 白
-$Mg^{2+}$, $BO_3^{3-}$, $Mg_3(BO_3)_2$, 白
-$Zn^{2+}$, $BO_3^{3-}$, $Zn_3(BO_3)_2$, 白
+$Na^+$, $NO_3^-$, $NaNO_3$, 溶
+$Na^+$, $CH_3COO^-$, $NaCH_3COO$, 溶
 $Na^+$, $Cl^-$, $NaCl$, 溶
 $Na^+$, $Br^-$, $NaBr$, 溶
 $Na^+$, $I^-$, $NaI$, 溶
-$Na^+$, $OH^-$, $NaOH$, 溶
-$Na^+$, $NO_3^-$, $NaNO_3$, 溶
-$Na^+$, $CH_3COO^-$, $NaCH_3COO$, 溶
-$Na^+$, $CN^-$, $NaCN$, 溶
-$Na^+$, $SCN^-$, $NaSCN$, 溶
-$Na^+$, $F^-$, $NaF$, 溶
-$Na^+$, $S^{2-}$, $Na_2S$, 溶
-$Na^+$, $CO_3^{2-}$, $Na_2CO_3$, 溶
 $Na^+$, $SO_4^{2-}$, $Na_2SO_4$, 溶
 $Na^+$, $CrO_4^{2-}$, $Na_2CrO_4$, 溶
+$Na^+$, $S^{2-}$, $Na_2S$, 溶
+$Na^+$, $OH^-$, $NaOH$, 溶
+$Na^+$, $PO_4^{3-}$, $Na_3PO_4$, 溶
+$Na^+$, $CO_3^{2-}$, $Na_2CO_3$, 溶
 $Na^+$, $SO_3^{2-}$, $Na_2SO_3$, 溶
 $Na^+$, $C_2O_4^{2-}$, $Na_2C_2O_4$, 溶
-$Na^+$, $SiO_3^{2-}$, $Na_2SiO_3$, 溶
-$Na^+$, $PO_4^{3-}$, $Na_3PO_4$, 溶
-$Na^+$, $AsO_4^{3-}$, $Na_3AsO_4$, 溶
-$Na^+$, $BO_3^{3-}$, $Na_3BO_3$, 溶
+$K^+$, $NO_3^-$, $KNO_3$, 溶
+$K^+$, $CH_3COO^-$, $KCH_3COO$, 溶
 $K^+$, $Cl^-$, $KCl$, 溶
 $K^+$, $Br^-$, $KBr$, 溶
 $K^+$, $I^-$, $KI$, 溶
-$K^+$, $OH^-$, $KOH$, 溶
-$K^+$, $NO_3^-$, $KNO_3$, 溶
-$K^+$, $CH_3COO^-$, $KCH_3COO$, 溶
-$K^+$, $CN^-$, $KCN$, 溶
-$K^+$, $SCN^-$, $KSCN$, 溶
-$K^+$, $F^-$, $KF$, 溶
-$K^+$, $S^{2-}$, $K_2S$, 溶
-$K^+$, $CO_3^{2-}$, $K_2CO_3$, 溶
 $K^+$, $SO_4^{2-}$, $K_2SO_4$, 溶
 $K^+$, $CrO_4^{2-}$, $K_2CrO_4$, 溶
+$K^+$, $S^{2-}$, $K_2S$, 溶
+$K^+$, $OH^-$, $KOH$, 溶
+$K^+$, $PO_4^{3-}$, $K_3PO_4$, 溶
+$K^+$, $CO_3^{2-}$, $K_2CO_3$, 溶
 $K^+$, $SO_3^{2-}$, $K_2SO_3$, 溶
 $K^+$, $C_2O_4^{2-}$, $K_2C_2O_4$, 溶
-$K^+$, $SiO_3^{2-}$, $K_2SiO_3$, 溶
-$K^+$, $PO_4^{3-}$, $K_3PO_4$, 溶
-$K^+$, $AsO_4^{3-}$, $K_3AsO_4$, 溶
-$K^+$, $BO_3^{3-}$, $K_3BO_3$, 溶
-$Li^+$, $Cl^-$, $LiCl$, 溶
-$Li^+$, $Br^-$, $LiBr$, 溶
-$Li^+$, $I^-$, $LiI$, 溶
-$Li^+$, $OH^-$, $LiOH$, 溶
-$Li^+$, $NO_3^-$, $LiNO_3$, 溶
-$Li^+$, $CH_3COO^-$, $LiCH_3COO$, 溶
-$Li^+$, $CN^-$, $LiCN$, 溶
-$Li^+$, $SCN^-$, $LiSCN$, 溶
-$Li^+$, $S^{2-}$, $Li_2S$, 溶
-$Li^+$, $SO_4^{2-}$, $Li_2SO_4$, 溶
-$Li^+$, $CrO_4^{2-}$, $Li_2CrO_4$, 溶
-$Li^+$, $SO_3^{2-}$, $Li_2SO_3$, 溶
-$Li^+$, $C_2O_4^{2-}$, $Li_2C_2O_4$, 溶
-$Li^+$, $SiO_3^{2-}$, $Li_2SiO_3$, 溶
-$Li^+$, $AsO_4^{3-}$, $Li_3AsO_4$, 溶
-$Li^+$, $BO_3^{3-}$, $Li_3BO_3$, 溶
+$NH_4^+$, $NO_3^-$, $NH_4NO_3$, 溶
+$NH_4^+$, $CH_3COO^-$, $NH_4CH_3COO$, 溶
 $NH_4^+$, $Cl^-$, $NH_4Cl$, 溶
 $NH_4^+$, $Br^-$, $NH_4Br$, 溶
 $NH_4^+$, $I^-$, $NH_4I$, 溶
-$NH_4^+$, $OH^-$, $NH_4OH$, 溶
-$NH_4^+$, $NO_3^-$, $NH_4NO_3$, 溶
-$NH_4^+$, $CH_3COO^-$, $NH_4CH_3COO$, 溶
-$NH_4^+$, $CN^-$, $NH_4CN$, 溶
-$NH_4^+$, $SCN^-$, $NH_4SCN$, 溶
-$NH_4^+$, $F^-$, $NH_4F$, 溶
-$NH_4^+$, $S^{2-}$, $(NH_4)_2S$, 溶
-$NH_4^+$, $CO_3^{2-}$, $(NH_4)_2CO_3$, 溶
 $NH_4^+$, $SO_4^{2-}$, $(NH_4)_2SO_4$, 溶
 $NH_4^+$, $CrO_4^{2-}$, $(NH_4)_2CrO_4$, 溶
+$NH_4^+$, $S^{2-}$, $(NH_4)_2S$, 溶
+$NH_4^+$, $OH^-$, $NH_4OH$, 溶
+$NH_4^+$, $PO_4^{3-}$, $(NH_4)_3PO_4$, 溶
+$NH_4^+$, $CO_3^{2-}$, $(NH_4)_2CO_3$, 溶
 $NH_4^+$, $SO_3^{2-}$, $(NH_4)_2SO_3$, 溶
 $NH_4^+$, $C_2O_4^{2-}$, $(NH_4)_2C_2O_4$, 溶
-$NH_4^+$, $SiO_3^{2-}$, $(NH_4)_2SiO_3$, 溶
-$NH_4^+$, $PO_4^{3-}$, $(NH_4)_3PO_4$, 溶
-$NH_4^+$, $AsO_4^{3-}$, $(NH_4)_3AsO_4$, 溶
-$NH_4^+$, $BO_3^{3-}$, $(NH_4)_3BO_3$, 溶
+$Mg^{2^+}$, $NO_3^-$, $Mg(NO_3)_2$, 溶
+$Mg^{2^+}$, $CH_3COO^-$, $Mg(CH_3COO)_2$, 溶
+$Mg^{2^+}$, $Cl^-$, $MgCl_2$, 溶
+$Mg^{2^+}$, $Br^-$, $MgBr_2$, 溶
+$Mg^{2^+}$, $I^-$, $MgI_2$, 溶
+$Mg^{2^+}$, $SO_4^{2-}$, $MgSO_4$, 溶
+$Mg^{2^+}$, $CrO_4^{2-}$, $MgCrO_4$, 溶
+$Mg^{2^+}$, $S^{2-}$, $MgS$, 溶
+$Mg^{2^+}$, $OH^-$, $Mg(OH)_2$, 白
+$Mg^{2^+}$, $PO_4^{3-}$, $Mg_3(PO_4)_2$, 白
+$Mg^{2^+}$, $CO_3^{2-}$, $MgCO_3$, 白
+$Mg^{2^+}$, $SO_3^{2-}$, $MgSO_3$, 白
+$Mg^{2^+}$, $C_2O_4^{2-}$, $MgC_2O_4$, 白
+$Ca^{2^+}$, $NO_3^-$, $Ca(NO_3)_2$, 溶
+$Ca^{2^+}$, $CH_3COO^-$, $Ca(CH_3COO)_2$, 溶
+$Ca^{2^+}$, $Cl^-$, $CaCl_2$, 溶
+$Ca^{2^+}$, $Br^-$, $CaBr_2$, 溶
+$Ca^{2^+}$, $I^-$, $CaI_2$, 溶
+$Ca^{2^+}$, $SO_4^{2-}$, $CaSO_4$, 白
+$Ca^{2^+}$, $CrO_4^{2-}$, $CaCrO_4$, 溶
+$Ca^{2^+}$, $S^{2-}$, $CaS$, 溶
+$Ca^{2^+}$, $OH^-$, $Ca(OH)_2$, 白
+$Ca^{2^+}$, $PO_4^{3-}$, $Ca_3(PO_4)_2$, 白
+$Ca^{2^+}$, $CO_3^{2-}$, $CaCO_3$, 白
+$Ca^{2^+}$, $SO_3^{2-}$, $CaSO_3$, 白
+$Ca^{2^+}$, $C_2O_4^{2-}$, $CaC_2O_4$, 白
+$Sr^{2^+}$, $NO_3^-$, $Sr(NO_3)_2$, 溶
+$Sr^{2^+}$, $CH_3COO^-$, $Sr(CH_3COO)_2$, 溶
+$Sr^{2^+}$, $Cl^-$, $SrCl_2$, 溶
+$Sr^{2^+}$, $Br^-$, $SrBr_2$, 溶
+$Sr^{2^+}$, $I^-$, $SrI_2$, 溶
+$Sr^{2^+}$, $SO_4^{2-}$, $SrSO_4$, 白
+$Sr^{2^+}$, $CrO_4^{2-}$, $SrCrO_4$, 黃
+$Sr^{2^+}$, $S^{2-}$, $SrS$, 溶
+$Sr^{2^+}$, $OH^-$, $Sr(OH)_2$, 溶
+$Sr^{2^+}$, $PO_4^{3-}$, $Sr_3(PO_4)_2$, 白
+$Sr^{2^+}$, $CO_3^{2-}$, $SrCO_3$, 白
+$Sr^{2^+}$, $SO_3^{2-}$, $SrSO_3$, 白
+$Sr^{2^+}$, $C_2O_4^{2-}$, $SrC_2O_4$, 白
+$Ba^{2^+}$, $NO_3^-$, $Ba(NO_3)_2$, 溶
+$Ba^{2^+}$, $CH_3COO^-$, $Ba(CH_3COO)_2$, 溶
+$Ba^{2^+}$, $Cl^-$, $BaCl_2$, 溶
+$Ba^{2^+}$, $Br^-$, $BaBr_2$, 溶
+$Ba^{2^+}$, $I^-$, $BaI_2$, 溶
+$Ba^{2^+}$, $SO_4^{2-}$, $BaSO_4$, 白
+$Ba^{2^+}$, $CrO_4^{2-}$, $BaCrO_4$, 黃
+$Ba^{2^+}$, $S^{2-}$, $BaS$, 溶
+$Ba^{2^+}$, $OH^-$, $Ba(OH)_2$, 溶
+$Ba^{2^+}$, $PO_4^{3-}$, $Ba_3(PO_4)_2$, 白
+$Ba^{2^+}$, $CO_3^{2-}$, $BaCO_3$, 白
+$Ba^{2^+}$, $SO_3^{2-}$, $BaSO_3$, 白
+$Ba^{2^+}$, $C_2O_4^{2-}$, $BaC_2O_4$, 白
+$Cu^+$, $NO_3^-$, $CuNO_3$, 溶
+$Cu^+$, $CH_3COO^-$, $CuCH_3COO$, 溶
+$Cu^+$, $Cl^-$, $CuCl$, 白
+$Cu^+$, $Br^-$, $CuBr$, 白
+$Cu^+$, $I^-$, $CuI$, 白
+$Cu^+$, $S^{2-}$, $Cu_2S$, 黑
+$Cu^{2^+}$, $NO_3^-$, $Cu(NO_3)_2$, 溶
+$Cu^{2^+}$, $CH_3COO^-$, $CuCH_3COO$, 溶
+$Cu^{2^+}$, $Cl^-$, $CuCl_2$, 溶
+$Cu^{2^+}$, $Br^-$, $CuBr_2$, 溶
+$Cu^{2^+}$, $I^-$, $CuI_2$, 溶
+$Cu^{2^+}$, $SO_4^{2-}$, $CuSO_4$, 溶
+$Cu^{2^+}$, $CrO_4^{2-}$, $CuCrO_4$, 溶
+$Cu^{2^+}$, $S^{2-}$, $CuS$, 黑
+$Cu^{2^+}$, $OH^-$, $Cu(OH)_2$, 淺藍
+$Cu^{2^+}$, $PO_4^{3-}$, $Cu_3(PO_4)_2$, 藍
+$Cu^{2^+}$, $CO_3^{2-}$, $Cu_2(OH)_2CO_3$, 藍綠
+$Cu^{2^+}$, $SO_3^{2-}$, $CuSO_3$, 白
+$Cu^{2^+}$, $C_2O_4^{2-}$, $CuC_2O_4$, 淺藍
+$Hg_2^{2+}$, $NO_3^-$, $Hg_2(NO_3)_2$, 溶
+$Hg_2^{2+}$, $CH_3COO^-$, $Hg_2(CH_3COO)_2$, 溶
+$Hg_2^{2+}$, $Cl^-$, $Hg_2Cl_2$, 白
+$Hg_2^{2+}$, $Br^-$, $Hg_2Br_2$, 微黃
+$Hg_2^{2+}$, $I^-$, $Hg_2I_2$, 黃綠
+$Hg_2^{2+}$, $SO_4^{2-}$, $Hg_2SO_4$, 溶
+$Hg_2^{2+}$, $CrO_4^{2-}$, $Hg_2CrO_4$, 溶
+$Hg_2^{2+}$, $S^{2-}$, $Hg_2S$, 黑
+$Hg_2^{2+}$, $OH^-$, $Hg_2O$, 黑
+$Hg_2^{2+}$, $PO_4^{3-}$, $Hg_2_3(PO_4)_2$, 白
+$Hg_2^{2+}$, $CO_3^{2-}$, $Hg_2CO_3$, 黃
+$Hg_2^{2+}$, $SO_3^{2-}$, $Hg_2SO_3$, 白
+$Hg_2^{2+}$, $C_2O_4^{2-}$, $Hg_2C_2O_4$, 白
 $Ag^+$, $NO_3^-$, $AgNO_3$, 溶
-$Mg^{2+}$, $NO_3^-$, $Mg(NO_3)_2$, 溶
-$Mg^{2+}$, $CH_3COO^-$, $Mg(CH_3COO)_2$, 溶
-$Ca^{2+}$, $NO_3^-$, $Ca(NO_3)_2$, 溶
-$Ca^{2+}$, $CH_3COO^-$, $Ca(CH_3COO)_2$, 溶
-$Sr^{2+}$, $NO_3^-$, $Sr(NO_3)_2$, 溶
-$Sr^{2+}$, $CH_3COO^-$, $Sr(CH_3COO)_2$, 溶
-$Ba^{2+}$, $NO_3^-$, $Ba(NO_3)_2$, 溶
-$Ba^{2+}$, $CH_3COO^-$, $Ba(CH_3COO)_2$, 溶
-$Cu^{2+}$, $NO_3^-$, $Cu(NO_3)_2$, 溶
-$Cu^{2+}$, $CH_3COO^-$, $Cu(CH_3COO)_2$, 溶
-$Fe^{2+}$, $NO_3^-$, $Fe(NO_3)_2$, 溶
-$Fe^{2+}$, $CH_3COO^-$, $Fe(CH_3COO)_2$, 溶
-$Zn^{2+}$, $NO_3^-$, $Zn(NO_3)_2$, 溶
-$Zn^{2+}$, $CH_3COO^-$, $Zn(CH_3COO)_2$, 溶
-$Ni^{2+}$, $NO_3^-$, $Ni(NO_3)_2$, 溶
-$Ni^{2+}$, $CH_3COO^-$, $Ni(CH_3COO)_2$, 溶
-$Co^{2+}$, $NO_3^-$, $Co(NO_3)_2$, 溶
-$Co^{2+}$, $CH_3COO^-$, $Co(CH_3COO)_2$, 溶
-$Mn^{2+}$, $NO_3^-$, $Mn(NO_3)_2$, 溶
-$Mn^{2+}$, $CH_3COO^-$, $Mn(CH_3COO)_2$, 溶
-$Cd^{2+}$, $NO_3^-$, $Cd(NO_3)_2$, 溶
-$Cd^{2+}$, $CH_3COO^-$, $Cd(CH_3COO)_2$, 溶
-$Sn^{2+}$, $NO_3^-$, $Sn(NO_3)_2$, 溶
-$Sn^{2+}$, $CH_3COO^-$, $Sn(CH_3COO)_2$, 溶
-$Pb^{2+}$, $NO_3^-$, $Pb(NO_3)_2$, 溶
-$Pb^{2+}$, $CH_3COO^-$, $Pb(CH_3COO)_2$, 溶
-$Hg^{2+}$, $NO_3^-$, $Hg(NO_3)_2$, 溶
-$Hg^{2+}$, $CH_3COO^-$, $Hg(CH_3COO)_2$, 溶
-$Al^{3+}$, $NO_3^-$, $Al(NO_3)_3$, 溶
-$Al^{3+}$, $CH_3COO^-$, $Al(CH_3COO)_3$, 溶
-$Fe^{3+}$, $NO_3^-$, $Fe(NO_3)_3$, 溶
-$Fe^{3+}$, $CH_3COO^-$, $Fe(CH_3COO)_3$, 溶
-$Cr^{3+}$, $NO_3^-$, $Cr(NO_3)_3$, 溶
-$Cr^{3+}$, $CH_3COO^-$, $Cr(CH_3COO)_3$, 溶
-$Bi^{3+}$, $NO_3^-$, $Bi(NO_3)_3$, 溶
-$Bi^{3+}$, $CH_3COO^-$, $Bi(CH_3COO)_3$, 溶
-$Mg^{2+}$, $Cl^-$, $MgCl_2$, 溶
-$Mg^{2+}$, $Br^-$, $MgBr_2$, 溶
-$Mg^{2+}$, $I^-$, $MgI_2$, 溶
-$Ca^{2+}$, $Cl^-$, $CaCl_2$, 溶
-$Ca^{2+}$, $Br^-$, $CaBr_2$, 溶
-$Ca^{2+}$, $I^-$, $CaI_2$, 溶
-$Sr^{2+}$, $Cl^-$, $SrCl_2$, 溶
-$Sr^{2+}$, $Br^-$, $SrBr_2$, 溶
-$Sr^{2+}$, $I^-$, $SrI_2$, 溶
-$Ba^{2+}$, $Cl^-$, $BaCl_2$, 溶
-$Ba^{2+}$, $Br^-$, $BaBr_2$, 溶
-$Ba^{2+}$, $I^-$, $BaI_2$, 溶
-$Cu^{2+}$, $Cl^-$, $CuCl_2$, 溶
-$Cu^{2+}$, $Br^-$, $CuBr_2$, 溶
-$Fe^{2+}$, $Cl^-$, $FeCl_2$, 溶
-$Fe^{2+}$, $Br^-$, $FeBr_2$, 溶
-$Fe^{2+}$, $I^-$, $FeI_2$, 溶
-$Zn^{2+}$, $Cl^-$, $ZnCl_2$, 溶
-$Zn^{2+}$, $Br^-$, $ZnBr_2$, 溶
-$Zn^{2+}$, $I^-$, $ZnI_2$, 溶
-$Ni^{2+}$, $Cl^-$, $NiCl_2$, 溶
-$Ni^{2+}$, $Br^-$, $NiBr_2$, 溶
-$Ni^{2+}$, $I^-$, $NiI_2$, 溶
-$Co^{2+}$, $Cl^-$, $CoCl_2$, 溶
-$Co^{2+}$, $Br^-$, $CoBr_2$, 溶
-$Co^{2+}$, $I^-$, $CoI_2$, 溶
-$Mn^{2+}$, $Cl^-$, $MnCl_2$, 溶
-$Mn^{2+}$, $Br^-$, $MnBr_2$, 溶
-$Mn^{2+}$, $I^-$, $MnI_2$, 溶
-$Cd^{2+}$, $Cl^-$, $CdCl_2$, 溶
-$Cd^{2+}$, $Br^-$, $CdBr_2$, 溶
-$Cd^{2+}$, $I^-$, $CdI_2$, 溶
-$Sn^{2+}$, $Cl^-$, $SnCl_2$, 溶
-$Sn^{2+}$, $Br^-$, $SnBr_2$, 溶
-$Sn^{2+}$, $I^-$, $SnI_2$, 溶
-$Hg^{2+}$, $Cl^-$, $HgCl_2$, 溶
-$Hg^{2+}$, $Br^-$, $HgBr_2$, 溶
-$Al^{3+}$, $Cl^-$, $AlCl_3$, 溶
-$Al^{3+}$, $Br^-$, $AlBr_3$, 溶
-$Al^{3+}$, $I^-$, $AlI_3$, 溶
-$Fe^{3+}$, $Cl^-$, $FeCl_3$, 溶
-$Fe^{3+}$, $Br^-$, $FeBr_3$, 溶
-$Cr^{3+}$, $Cl^-$, $CrCl_3$, 溶
-$Cr^{3+}$, $Br^-$, $CrBr_3$, 溶
-$Cr^{3+}$, $I^-$, $CrI_3$, 溶
-$Bi^{3+}$, $Cl^-$, $BiCl_3$, 溶
-$Bi^{3+}$, $Br^-$, $BiBr_3$, 溶
-$Mg^{2+}$, $SO_4^{2-}$, $MgSO_4$, 溶
-$Cu^{2+}$, $SO_4^{2-}$, $CuSO_4$, 溶
-$Fe^{2+}$, $SO_4^{2-}$, $FeSO_4$, 溶
-$Zn^{2+}$, $SO_4^{2-}$, $ZnSO_4$, 溶
-$Ni^{2+}$, $SO_4^{2-}$, $NiSO_4$, 溶
-$Co^{2+}$, $SO_4^{2-}$, $CoSO_4$, 溶
-$Mn^{2+}$, $SO_4^{2-}$, $MnSO_4$, 溶
-$Cd^{2+}$, $SO_4^{2-}$, $CdSO_4$, 溶
-$Sn^{2+}$, $SO_4^{2-}$, $SnSO_4$, 溶
-$Hg^{2+}$, $SO_4^{2-}$, $HgSO_4$, 溶
-$Al^{3+}$, $SO_4^{2-}$, $Al_2(SO_4)_3$, 溶
-$Fe^{3+}$, $SO_4^{2-}$, $Fe_2(SO_4)_3$, 溶
-$Cr^{3+}$, $SO_4^{2-}$, $Cr_2(SO_4)_3$, 溶
-$Bi^{3+}$, $SO_4^{2-}$, $Bi_2(SO_4)_3$, 溶
-$Ba^{2+}$, $OH^-$, $Ba(OH)_2$, 溶
-$Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
+$Ag^+$, $CH_3COO^-$, $AgCH_3COO$, 溶
+$Ag^+$, $Cl^-$, $AgCl$, 白
+$Ag^+$, $Br^-$, $AgBr$, 淡黃
+$Ag^+$, $I^-$, $AgI$, 黃
+$Ag^+$, $SO_4^{2-}$, $Ag_2SO_4$, 溶
+$Ag^+$, $CrO_4^{2-}$, $Ag_2CrO_4$, 磚紅
+$Ag^+$, $S^{2-}$, $Ag_2S$, 黑
+$Ag^+$, $OH^-$, $Ag_2O$, 棕褐
+$Ag^+$, $PO_4^{3-}$, $Ag_3PO_4$, 黃
+$Ag^+$, $CO_3^{2-}$, $Ag_2CO_3$, 淡黃
+$Ag^+$, $SO_3^{2-}$, $Ag_2SO_3$, 白
+$Ag^+$, $C_2O_4^{2-}$, $Ag_2C_2O_4$, 白
+$Pb^{2^+}$, $NO_3^-$, $Pb(NO_3)_2$, 溶
+$Pb^{2^+}$, $CH_3COO^-$, $Pb(CH_3COO)_2$, 溶
+$Pb^{2^+}$, $Cl^-$, $PbCl_2$, 白
+$Pb^{2^+}$, $Br^-$, $PbBr_2$, 白
+$Pb^{2^+}$, $I^-$, $PbI_2$, 黃
+$Pb^{2^+}$, $SO_4^{2-}$, $PbSO_4$, 白
+$Pb^{2^+}$, $CrO_4^{2-}$, $PbCrO_4$, 黃
+$Pb^{2^+}$, $S^{2-}$, $PbS$, 黑
+$Pb^{2^+}$, $OH^-$, $Pb(OH)_2$, 白
+$Pb^{2^+}$, $PO_4^{3-}$, $Pb_3(PO_4)_2$, 白
+$Pb^{2^+}$, $CO_3^{2-}$, $PbCO_3$, 白
+$Pb^{2^+}$, $SO_3^{2-}$, $PbSO_3$, 白
+$Pb^{2^+}$, $C_2O_4^{2-}$, $PbC_2O_4$, 白
+$Tl^+$, $NO_3^-$, $TlNO_3$, 溶
+$Tl^+$, $CH_3COO^-$, $TlCH_3COO$, 溶
+$Tl^+$, $Cl^-$, $TlCl$, 白
+$Tl^+$, $Br^-$, $TlBr$, 淺黃
+$Tl^+$, $I^-$, $TlI$, 黃
+$Tl^+$, $SO_4^{2-}$, $Tl_2SO_4$, 溶
+$Tl^+$, $CrO_4^{2-}$, $Tl_2CrO_4$, 溶
+$Tl^+$, $S^{2-}$, $Tl_2S$, 黑
+$Al^{3^+}$, $NO_3^-$, $Al(NO_3)_3$, 溶
+$Al^{3^+}$, $CH_3COO^-$, $Al(CH_3COO)_3$, 溶
+$Al^{3^+}$, $Cl^-$, $AlCl_3$, 溶
+$Al^{3^+}$, $Br^-$, $AlBr_3$, 溶
+$Al^{3^+}$, $I^-$, $AlI_3$, 溶
+$Al^{3^+}$, $SO_4^{2-}$, $Al_2(SO_4)_3$, 溶
+$Al^{3^+}$, $CrO_4^{2-}$, $Al_2(CrO_4)_3$, 溶
+$Al^{3^+}$, $OH^-$, $Al(OH)_3$, 白
+$Al^{3^+}$, $PO_4^{3-}$, $AlPO_4$, 白
+$Al^{3^+}$, $CO_3^{2-}$, $Al_2(CO_3)_3$, 白
+$Al^{3^+}$, $SO_3^{2-}$, $Al_2(SO_3)_3$, 白
+$Al^{3^+}$, $C_2O_4^{2-}$, $Al_2(C_2O_4)_3$, 白
+$Fe^{2^+}$, $NO_3^-$, $Fe(NO_3)_2$, 溶
+$Fe^{2^+}$, $CH_3COO^-$, $Fe(CH_3COO)_2$, 溶
+$Fe^{2^+}$, $Cl^-$, $FeCl_2$, 溶
+$Fe^{2^+}$, $Br^-$, $FeBr_2$, 溶
+$Fe^{2^+}$, $I^-$, $FeI_2$, 溶
+$Fe^{2^+}$, $SO_4^{2-}$, $FeSO_4$, 溶
+$Fe^{2^+}$, $CrO_4^{2-}$, $FeCrO_4$, 溶
+$Fe^{2^+}$, $S^{2-}$, $FeS$, 黑
+$Fe^{2^+}$, $OH^-$, $Fe(OH)_2$, 綠
+$Fe^{2^+}$, $PO_4^{3-}$, $Fe_3(PO_4)_2$, 白
+$Fe^{2^+}$, $CO_3^{2-}$, $FeCO_3$, 白
+$Fe^{2^+}$, $SO_3^{2-}$, $FeSO_3$, 白綠
+$Fe^{2^+}$, $C_2O_4^{2-}$, $FeC_2O_4$, 淺黃
+$Fe^{3^+}$, $NO_3^-$, $Fe(NO_3)_3$, 溶
+$Fe^{3^+}$, $CH_3COO^-$, $Fe(CH_3COO)_3$, 溶
+$Fe^{3^+}$, $Cl^-$, $FeCl_3$, 溶
+$Fe^{3^+}$, $Br^-$, $FeBr_3$, 溶
+$Fe^{3^+}$, $I^-$, $FeI_3$, 溶
+$Fe^{3^+}$, $SO_4^{2-}$, $Fe_2(SO_4)_3$, 溶
+$Fe^{3^+}$, $CrO_4^{2-}$, $Fe_2(CrO_4)_3$, 溶
+$Fe^{3^+}$, $OH^-$, $Fe(OH)_3$, 紅褐
+$Fe^{3^+}$, $PO_4^{3-}$, $FePO_4$, 黃白
+$Fe^{3^+}$, $CO_3^{2-}$, $Fe_2(CO_3)_3$, 白
+$Fe^{3^+}$, $SO_3^{2-}$, $Fe_2(SO_3)_3$, 白
+$Fe^{3^+}$, $C_2O_4^{2-}$, $Fe_2(C_2O_4)_3$, 白
+$Ni^{2^+}$, $NO_3^-$, $Ni(NO_3)_2$, 溶
+$Ni^{2^+}$, $CH_3COO^-$, $Ni(CH_3COO)_2$, 溶
+$Ni^{2^+}$, $Cl^-$, $NiCl_2$, 溶
+$Ni^{2^+}$, $Br^-$, $NiBr_2$, 溶
+$Ni^{2^+}$, $I^-$, $NiI_2$, 溶
+$Ni^{2^+}$, $SO_4^{2-}$, $NiSO_4$, 溶
+$Ni^{2^+}$, $CrO_4^{2-}$, $NiCrO_4$, 溶
+$Ni^{2^+}$, $S^{2-}$, $NiS$, 黑
+$Ni^{2^+}$, $OH^-$, $Ni(OH)_2$, 綠
+$Ni^{2^+}$, $PO_4^{3-}$, $Ni_3(PO_4)_2$, 淺綠
+$Ni^{2^+}$, $CO_3^{2-}$, $NiCO_3$, 綠
+$Ni^{2^+}$, $SO_3^{2-}$, $NiSO_3$, 綠
+$Ni^{2^+}$, $C_2O_4^{2-}$, $NiC_2O_4$, 淺綠
+$Zn^{2^+}$, $NO_3^-$, $Zn(NO_3)_2$, 溶
+$Zn^{2^+}$, $CH_3COO^-$, $Zn(CH_3COO)_2$, 溶
+$Zn^{2^+}$, $Cl^-$, $ZnCl_2$, 溶
+$Zn^{2^+}$, $Br^-$, $ZnBr_2$, 溶
+$Zn^{2^+}$, $I^-$, $ZnI_2$, 溶
+$Zn^{2^+}$, $SO_4^{2-}$, $ZnSO_4$, 溶
+$Zn^{2^+}$, $CrO_4^{2-}$, $ZnCrO_4$, 溶
+$Zn^{2^+}$, $S^{2-}$, $ZnS$, 白
+$Zn^{2^+}$, $OH^-$, $Zn(OH)_2$, 白
+$Zn^{2^+}$, $PO_4^{3-}$, $Zn_3(PO_4)_2$, 白
+$Zn^{2^+}$, $CO_3^{2-}$, $ZnCO_3$, 白
+$Zn^{2^+}$, $SO_3^{2-}$, $ZnSO_3$, 白
+$Zn^{2^+}$, $C_2O_4^{2-}$, $ZnC_2O_4$, 白
+$Mn^{2^+}$, $NO_3^-$, $Mn(NO_3)_2$, 溶
+$Mn^{2^+}$, $CH_3COO^-$, $Mn(CH_3COO)_2$, 溶
+$Mn^{2^+}$, $Cl^-$, $MnCl_2$, 溶
+$Mn^{2^+}$, $Br^-$, $MnBr_2$, 溶
+$Mn^{2^+}$, $I^-$, $MnI_2$, 溶
+$Mn^{2^+}$, $SO_4^{2-}$, $MnSO_4$, 溶
+$Mn^{2^+}$, $CrO_4^{2-}$, $MnCrO_4$, 溶
+$Mn^{2^+}$, $S^{2-}$, $MnS$, 粉紅
+$Mn^{2^+}$, $OH^-$, $Mn(OH)_2$, 白
+$Mn^{2^+}$, $PO_4^{3-}$, $Mn_3(PO_4)_2$, 粉白
+$Mn^{2^+}$, $CO_3^{2-}$, $MnCO_3$, 粉白
+$Mn^{2^+}$, $SO_3^{2-}$, $MnSO_3$, 粉白
+$Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
 `;
 
         // --- 顏色分群映射與樣式設定 ---
@@ -702,14 +538,12 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
 
         function init() {
             parseData();
-            const savedC = JSON.parse(localStorage.getItem('chemCationsV2'));
-            const savedA = JSON.parse(localStorage.getItem('chemAnionsV2'));
-            selectedCations = savedC || Object.keys(cationsMap);
-            selectedAnions = savedA || Object.keys(anionsMap);
+            
+            selectedCations = Object.keys(cationsMap);
+            selectedAnions = Object.keys(anionsMap);
 
             document.getElementById('practice-count').innerText = practiceCount;
 
-            renderSettings();
             buildColorButtons('color-options', selectColor);
             buildColorButtons('chal-color-options', selectChalColor);
             renderChallengeRecords();
@@ -854,40 +688,40 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
 
         /* ----- 限時挑戰模式邏輯 ----- */
         function renderChallengeRecords() {
-		    [30, 60, 180].forEach(time => {
-		        const rec = challengeRecords[time];
-		        const rEl = document.getElementById(`record-${time}`);
-		        if (!rEl) return;
-		        
-		        let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
-		        let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
-		        
-		        // 判斷是否有紀錄，若有則顯示刪除按鈕
-		        let deleteBtn = (rec.maxC.c > 0 || rec.maxA.t > 0) 
-		            ? `<button onclick="deleteChallengeRecord(${time})" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--wrong); padding: 5px;" title="清除此紀錄">🗑️</button>` 
-		            : '';
-		
-		        rEl.innerHTML = `
-		            <div style="display: flex; justify-content: space-between; align-items: center;">
-		                <div>
-		                    🏆 最多答對: <span style="color:var(--primary); font-weight:bold;">${textC}</span><br>
-		                    🎯 最高答對率: <span style="color:var(--correct); font-weight:bold;">${textA}</span>
-		                </div>
-		                ${deleteBtn}
-		            </div>
-		        `;
-		    });
-		}
+            [30, 60, 180].forEach(time => {
+                const rec = challengeRecords[time];
+                const rEl = document.getElementById(`record-${time}`);
+                if (!rEl) return;
+                
+                let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
+                let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
+                
+                // 判斷是否有紀錄，若有則顯示刪除按鈕
+                let deleteBtn = (rec.maxC.c > 0 || rec.maxA.t > 0) 
+                    ? `<button onclick="deleteChallengeRecord(${time})" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--wrong); padding: 5px;" title="清除此紀錄">🗑️</button>` 
+                    : '';
+        
+                rEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            🏆 最多答對: <span style="color:var(--primary); font-weight:bold;">${textC}</span><br>
+                            🎯 最高答對率: <span style="color:var(--correct); font-weight:bold;">${textA}</span>
+                        </div>
+                        ${deleteBtn}
+                    </div>
+                `;
+            });
+        }
 
-		function deleteChallengeRecord(time) {
-		    let timeText = time >= 60 ? (time/60) + " 分鐘" : time + " 秒";
-		    if (confirm(`確定要清除「${timeText}」的最高紀錄嗎？清除後無法復原喔！`)) {
-		        // 重置該時間段的紀錄
-		        challengeRecords[time] = { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} };
-		        localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
-		        renderChallengeRecords(); // 重新渲染畫面
-		    }
-		}
+        function deleteChallengeRecord(time) {
+            let timeText = time >= 60 ? (time/60) + " 分鐘" : time + " 秒";
+            if (confirm(`確定要清除「${timeText}」的最高紀錄嗎？清除後無法復原喔！`)) {
+                // 重置該時間段的紀錄
+                challengeRecords[time] = { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} };
+                localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
+                renderChallengeRecords(); // 重新渲染畫面
+            }
+        }
 
         function startChallenge(seconds) {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
@@ -1066,7 +900,7 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             document.getElementById('challenge-start-screen').style.display = 'block';
         }
 
-        /* ----- 錯題本與設定邏輯 ----- */
+        /* ----- 錯題本邏輯 ----- */
         function recordMistake(q, actualText, userText) {
             const htmlText = `${q.cHtml} + ${q.aHtml}`;
             mistakes = mistakes.filter(m => m.htmlText !== htmlText);
@@ -1108,12 +942,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             });
         }
 
-        function removeMistake(index) {
-            mistakes.splice(index, 1);
-            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes));
-            renderMistakes();
-        }
-
         function manualAddMistake() {
             const cid = document.getElementById('manual-c').value;
             const aid = document.getElementById('manual-a').value;
@@ -1151,45 +979,6 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
             if(confirm("確定要清空所有紀錄嗎？")) {
                 mistakes = []; localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); renderMistakes();
             }
-        }
-
-        function renderSettings() {
-            const cGrid = document.getElementById('cations-settings'), aGrid = document.getElementById('anions-settings');
-            cGrid.innerHTML = ''; aGrid.innerHTML = '';
-            Object.values(cationsMap).sort((a, b) => a.id.localeCompare(b.id)).forEach(c => {
-                const lbl = document.createElement('label'); lbl.className = 'checkbox-label';
-                lbl.innerHTML = `<input type="checkbox" value="${c.id}" ${selectedCations.includes(c.id) ? 'checked' : ''}> <span style="font-size:1.1rem;">${c.html}</span>`;
-                cGrid.appendChild(lbl);
-            });
-            Object.values(anionsMap).sort((a, b) => a.id.localeCompare(b.id)).forEach(a => {
-                const lbl = document.createElement('label'); lbl.className = 'checkbox-label';
-                lbl.innerHTML = `<input type="checkbox" value="${a.id}" ${selectedAnions.includes(a.id) ? 'checked' : ''}> <span style="font-size:1.1rem;">${a.html}</span>`;
-                aGrid.appendChild(lbl);
-            });
-        }
-
-        function toggleAll(type, check) {
-            document.querySelectorAll(`#${type}-settings input[type="checkbox"]`).forEach(input => input.checked = check);
-        }
-
-        function saveSettings() {
-            selectedCations = Array.from(document.querySelectorAll('#cations-settings input:checked')).map(i => i.value);
-            selectedAnions = Array.from(document.querySelectorAll('#anions-settings input:checked')).map(i => i.value);
-            localStorage.setItem('chemCationsV2', JSON.stringify(selectedCations));
-            localStorage.setItem('chemAnionsV2', JSON.stringify(selectedAnions));
-            alert('✅ 設定已儲存！'); switchTab('practice'); nextQuestion();
-        }
-
-        function setHighSchool() {
-            const hsCations = ["Ag+", "Al3+", "Ba2+", "Ca2+", "Cr3+", "Cu+", "Cu2+", "Fe2+", "Fe3+", "K+", "Li+", "Mg2+", "Mn2+", "Na+", "NH4+", "Pb2+", "Sr2+", "Tl+", "Zn2+"];
-            const hsAnions = ["Br-", "CH3COO-", "Cl-", "CO32-", "CrO42-", "I-", "NO3-", "OH-", "S2-", "SO32-", "SO42-"];
-            
-            document.querySelectorAll('#cations-settings input[type="checkbox"]').forEach(input => {
-                input.checked = hsCations.includes(input.value);
-            });
-            document.querySelectorAll('#anions-settings input[type="checkbox"]').forEach(input => {
-                input.checked = hsAnions.includes(input.value);
-            });
         }
 
         window.onload = init;
