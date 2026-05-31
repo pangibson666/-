@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沉澱試煉V1.4</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --bg-color: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --correct: #27AE60;
+            --wrong: #E74C3C;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background-color: var(--bg-color); color: var(--text-main); }
+        header { background-color: var(--primary); color: white; padding: 1rem; text-align: center; font-size: 1.2rem; font-weight: bold; }
+        nav { display: flex; justify-content: center; background-color: #357ABD; position: sticky; top: 0; z-index: 100; }
+        nav button { background: none; border: none; color: white; padding: 12px 20px; font-size: 1rem; cursor: pointer; transition: 0.3s; flex: 1; max-width: 150px; }
+        nav button:hover, nav button.active { background-color: rgba(255,255,255,0.25); border-bottom: 3px solid white; }
+        
+        .container { max-width: 700px; margin: 20px auto; padding: 0 15px; }
+        .view { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Practice View */
+        .card { background: var(--card-bg); border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px; text-align: center; margin-bottom: 20px; }
+        .ion-display { font-size: 2.5rem; font-weight: bold; letter-spacing: 2px; margin: 20px 0; color: var(--primary); }
+        
+        .btn-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
+        .btn { flex: 1; padding: 12px 20px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; max-width: 200px;}
+        .btn:hover { background: #eef5ff; transform: scale(1.02); }
+        .btn.selected { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4); }
+
+        .color-options { display: none; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #eee; }
+        .color-btn { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .color-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .color-btn.selected { outline: 4px solid var(--primary); outline-offset: 2px; transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .color-hint { display: none; font-size: 0.85rem; color: #888; margin-top: 15px; }
+
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 25px; transition: 0.2s; }
+        .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .submit-btn:not(:disabled):hover { background: #357ABD; }
+
+        .feedback { margin-top: 20px; padding: 20px; border-radius: 8px; display: none; font-size: 1.1rem; line-height: 1.6; text-align: left; }
+        .feedback.correct { background: #d4edda; color: #155724; border-left: 5px solid var(--correct); display: block; }
+        .feedback.wrong { background: #f8d7da; color: #721c24; border-left: 5px solid var(--wrong); display: block; }
+        .result-formula { font-size: 1.3rem; font-weight: bold; color: #333; margin-top: 8px; display: inline-block; padding: 4px 10px; background: rgba(255,255,255,0.6); border-radius: 5px;}
+        
+        .next-btn { display: none; width: 100%; padding: 15px; background: #2C3E50; color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .next-btn:hover { background: #1a252f; }
+
+        /* Settings & Mistakes */
+        .info-text { font-size: 0.95rem; color: #666; margin-bottom: 15px; }
+        .settings-group { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .settings-group h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+        .checkbox-label { display: flex; align-items: center; cursor: pointer; padding: 5px; border-radius: 5px; transition: 0.2s; }
+        .checkbox-label:hover { background: #f0f8ff; }
+        .checkbox-label input { margin-right: 8px; transform: scale(1.2); }
+        .save-settings-btn { width: 100%; padding: 15px; background: var(--correct); color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; position: sticky; bottom: 20px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
+
+        .mistake-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid var(--wrong); }
+        .mistake-header { font-size: 1.3rem; font-weight: bold; margin-bottom: 8px; color: var(--primary); }
+        .mistake-detail { color: #555; font-size: 1rem; line-height: 1.5; }
+        .action-btns { display: flex; gap: 10px; margin-bottom: 20px; }
+        .action-btns button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-copy { background: var(--primary); }
+        .btn-clear { background: var(--wrong); }
+        .empty-msg { text-align: center; color: #777; font-size: 1.1rem; margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+    <header>沉澱試煉V1.4</header>
+    <nav>
+        <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
+        <button id="nav-settings" onclick="switchTab('settings')">⚙️ 設定區</button>
+        <button id="nav-mistakes" onclick="switchTab('mistakes')">📖 錯題本</button>
+    </nav>
+
+    <div class="container">
+        <!-- 練習區 -->
+        <div id="view-practice" class="view active">
+            <div class="card">
+                <div id="ion-display" class="ion-display">載入中...</div>
+                
+                <div class="btn-group">
+                    <button class="btn" id="btn-precip-no" onclick="selectPrecipitate(false)">不會沉澱</button>
+                    <button class="btn" id="btn-precip-yes" onclick="selectPrecipitate(true)">會沉澱</button>
+                </div>
+
+                <div id="color-options" class="color-options"></div>
+                <div id="color-hint" class="color-hint">💡 系統已自動進行相近色合併（例：微綠白歸類在「白」、淺黃歸類在「淡黃」）。</div>
+
+                <button id="submit-btn" class="submit-btn" onclick="checkAnswer()" disabled>送出答案</button>
+                <div id="feedback" class="feedback"></div>
+                <button id="next-btn" class="next-btn" onclick="nextQuestion()">下一題 ➔</button>
+            </div>
+        </div>
+
+        <!-- 設定區 -->
+        <div id="view-settings" class="view">
+            <p class="info-text">💡 勾選你想練習的離子組合，未勾選的離子不會出現在題目中。<br>※ 題目只會出現「資料庫中存在」的組合。</p>
+	    <button onclick="setHighSchool()" style="margin-bottom: 15px; padding: 10px 15px; background: #8E44AD; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 一鍵套用高中課內範圍</button>
+            <div class="settings-group">
+                <h3>陽離子 (Cations) <button onclick="toggleAll('cations', true)" style="font-size:0.8rem; margin-left:10px;">全選</button> <button onclick="toggleAll('cations', false)" style="font-size:0.8rem;">全不選</button></h3>
+                <div id="cations-settings" class="checkbox-grid"></div>
+            </div>
+            <div class="settings-group">
+                <h3>陰離子 (Anions) <button onclick="toggleAll('anions', true)" style="font-size:0.8rem; margin-left:10px;">全選</button> <button onclick="toggleAll('anions', false)" style="font-size:0.8rem;">全不選</button></h3>
+                <div id="anions-settings" class="checkbox-grid"></div>
+            </div>
+            <button class="save-settings-btn" onclick="saveSettings()">💾 儲存設定並開始練習</button>
+        </div>
+
+        <!-- 錯題本 -->
+        <div id="view-mistakes" class="view">
+            <div class="action-btns">
+                <button class="btn-copy" onclick="copyMistakes()">📋 複製錯題筆記</button>
+                <button class="btn-clear" onclick="clearMistakes()">🗑️ 清空錯題本</button>
+            </div>
+            <div id="mistakes-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 資料庫 (已隱藏於此) ---
+        const rawTextData = `
+$Ag^+$, $Cl^-$, $AgCl$, 白
+$Ag^+$, $Br^-$, $AgBr$, 淡黃
+$Ag^+$, $I^-$, $AgI$, 黃
+$Pb^{2+}$, $Cl^-$, $PbCl_2$, 白
+$Pb^{2+}$, $Br^-$, $PbBr_2$, 白
+$Pb^{2+}$, $I^-$, $PbI_2$, 金黃
+$Hg_2^{2+}$, $Cl^-$, $Hg_2Cl_2$, 白
+$Hg_2^{2+}$, $Br^-$, $Hg_2Br_2$, 微黃
+$Hg_2^{2+}$, $I^-$, $Hg_2I_2$, 黃綠
+$Cu^+$, $Cl^-$, $CuCl$, 白
+$Cu^+$, $Br^-$, $CuBr$, 白
+$Cu^+$, $I^-$, $CuI$, 白
+$Cu^{2+}$, $I^-$, $CuI$, 白
+$Tl^+$, $Cl^-$, $TlCl$, 白
+$Tl^+$, $Br^-$, $TlBr$, 淺黃
+$Tl^+$, $I^-$, $TlI$, 黃
+$Hg^{2+}$, $I^-$, $HgI_2$, 紅
+$Bi^{3+}$, $I^-$, $BiI_3$, 黑褐
+$Ag^+$, $S^{2-}$, $Ag_2S$, 黑
+$Pb^{2+}$, $S^{2-}$, $PbS$, 黑
+$Hg_2^{2+}$, $S^{2-}$, $Hg_2S$, 黑
+$Hg^{2+}$, $S^{2-}$, $HgS$, 黑
+$Cu^{2+}$, $S^{2-}$, $CuS$, 黑
+$Cu^+$, $S^{2-}$, $Cu_2S$, 黑
+$Bi^{3+}$, $S^{2-}$, $Bi_2S_3$, 棕黑
+$Cd^{2+}$, $S^{2-}$, $CdS$, 黃
+$Sn^{2+}$, $S^{2-}$, $SnS$, 棕
+$Sn^{4+}$, $S^{2-}$, $SnS_2$, 黃
+$Sb^{3+}$, $S^{2-}$, $Sb_2S_3$, 橘紅
+$Sb^{5+}$, $S^{2-}$, $Sb_2S_5$, 橘
+$As^{3+}$, $S^{2-}$, $As_2S_3$, 黃
+$As^{5+}$, $S^{2-}$, $As_2S_5$, 黃
+$Fe^{2+}$, $S^{2-}$, $FeS$, 黑
+$Fe^{3+}$, $S^{2-}$, $Fe_2S_3$, 黃綠
+$Co^{2+}$, $S^{2-}$, $CoS$, 黑
+$Ni^{2+}$, $S^{2-}$, $NiS$, 黑
+$Mn^{2+}$, $S^{2-}$, $MnS$, 肉色
+$Zn^{2+}$, $S^{2-}$, $ZnS$, 白
+$Ag^+$, $OH^-$, $Ag_2O$, 棕褐
+$Pb^{2+}$, $OH^-$, $Pb(OH)_2$, 白
+$Hg_2^{2+}$, $OH^-$, $Hg_2O$, 黑
+$Hg^{2+}$, $OH^-$, $HgO$, 黃
+$Cu^{2+}$, $OH^-$, $Cu(OH)_2$, 淺藍
+$Bi^{3+}$, $OH^-$, $Bi(OH)_3$, 白
+$Cd^{2+}$, $OH^-$, $Cd(OH)_2$, 白
+$Fe^{2+}$, $OH^-$, $Fe(OH)_2$, 灰綠
+$Fe^{3+}$, $OH^-$, $Fe(OH)_3$, 紅褐
+$Co^{2+}$, $OH^-$, $Co(OH)_2$, 粉紅
+$Ni^{2+}$, $OH^-$, $Ni(OH)_2$, 蘋果綠
+$Mn^{2+}$, $OH^-$, $Mn(OH)_2$, 白
+$Zn^{2+}$, $OH^-$, $Zn(OH)_2$, 白
+$Al^{3+}$, $OH^-$, $Al(OH)_3$, 白
+$Cr^{3+}$, $OH^-$, $Cr(OH)_3$, 灰綠
+$Sn^{2+}$, $OH^-$, $Sn(OH)_2$, 白
+$Sn^{4+}$, $OH^-$, $Sn(OH)_4$, 白
+$Mg^{2+}$, $OH^-$, $Mg(OH)_2$, 白
+$Ca^{2+}$, $OH^-$, $Ca(OH)_2$, 白
+$Nd^{3+}$, $OH^-$, $Nd(OH)_3$, 淡紫
+$Pr^{3+}$, $OH^-$, $Pr(OH)_3$, 綠
+$Ce^{3+}$, $OH^-$, $Ce(OH)_3$, 白
+$La^{3+}$, $OH^-$, $La(OH)_3$, 白
+$Zr^{4+}$, $OH^-$, $Zr(OH)_4$, 白
+$Ag^+$, $CO_3^{2-}$, $Ag_2CO_3$, 淡黃
+$Pb^{2+}$, $CO_3^{2-}$, $PbCO_3$, 白
+$Hg_2^{2+}$, $CO_3^{2-}$, $Hg_2CO_3$, 黃
+$Hg^{2+}$, $CO_3^{2-}$, $HgCO_3$, 棕紅
+$Cu^{2+}$, $CO_3^{2-}$, $CuCO_3$, 藍綠
+$Cd^{2+}$, $CO_3^{2-}$, $CdCO_3$, 白
+$Fe^{2+}$, $CO_3^{2-}$, $FeCO_3$, 白
+$Co^{2+}$, $CO_3^{2-}$, $CoCO_3$, 粉紅
+$Ni^{2+}$, $CO_3^{2-}$, $NiCO_3$, 綠
+$Mn^{2+}$, $CO_3^{2-}$, $MnCO_3$, 粉白
+$Zn^{2+}$, $CO_3^{2-}$, $ZnCO_3$, 白
+$Ba^{2+}$, $CO_3^{2-}$, $BaCO_3$, 白
+$Sr^{2+}$, $CO_3^{2-}$, $SrCO_3$, 白
+$Ca^{2+}$, $CO_3^{2-}$, $CaCO_3$, 白
+$Mg^{2+}$, $CO_3^{2-}$, $MgCO_3$, 白
+$Bi^{3+}$, $CO_3^{2-}$, $(BiO)_2CO_3$, 白
+$Pb^{2+}$, $SO_4^{2-}$, $PbSO_4$, 白
+$Ba^{2+}$, $SO_4^{2-}$, $BaSO_4$, 白
+$Sr^{2+}$, $SO_4^{2-}$, $SrSO_4$, 白
+$Ca^{2+}$, $SO_4^{2-}$, $CaSO_4$, 白（微溶）
+$Ag^+$, $SO_4^{2-}$, $Ag_2SO_4$, 白（微溶）
+$Ca^{2+}$, $OH^-$, $Ca(OH)_2$, 白（微溶）
+$Hg_2^{2+}$, $SO_4^{2-}$, $Hg_2SO_4$, 白
+$Ag^+$, $CrO_4^{2-}$, $Ag_2CrO_4$, 磚紅
+$Pb^{2+}$, $CrO_4^{2-}$, $PbCrO_4$, 黃
+$Hg_2^{2+}$, $CrO_4^{2-}$, $Hg_2CrO_4$, 磚紅
+$Ba^{2+}$, $CrO_4^{2-}$, $BaCrO_4$, 黃
+$Sr^{2+}$, $CrO_4^{2-}$, $SrCrO_4$, 黃
+$Ca^{2+}$, $CrO_4^{2-}$, $CaCrO_4$, 黃
+$Cu^{2+}$, $CrO_4^{2-}$, $CuCrO_4$, 紅褐
+$Cd^{2+}$, $CrO_4^{2-}$, $CdCrO_4$, 黃
+$Zn^{2+}$, $CrO_4^{2-}$, $ZnCrO_4$, 黃
+$Co^{2+}$, $CrO_4^{2-}$, $CoCrO_4$, 灰黑
+$Ni^{2+}$, $CrO_4^{2-}$, $NiCrO_4$, 黃綠
+$Bi^{3+}$, $CrO_4^{2-}$, $(BiO)_2CrO_4$, 黃
+$Tl^+$, $CrO_4^{2-}$, $Tl_2CrO_4$, 黃
+$Ag^+$, $PO_4^{3-}$, $Ag_3PO_4$, 黃
+$Pb^{2+}$, $PO_4^{3-}$, $Pb_3(PO_4)_2$, 白
+$Cu^{2+}$, $PO_4^{3-}$, $Cu_3(PO_4)_2$, 藍
+$Cd^{2+}$, $PO_4^{3-}$, $Cd_3(PO_4)_2$, 白
+$Fe^{2+}$, $PO_4^{3-}$, $Fe_3(PO_4)_2$, 白
+$Fe^{3+}$, $PO_4^{3-}$, $FePO_4$, 黃白
+$Co^{2+}$, $PO_4^{3-}$, $Co_3(PO_4)_2$, 粉紫
+$Ni^{2+}$, $PO_4^{3-}$, $Ni_3(PO_4)_2$, 淺綠
+$Mn^{2+}$, $PO_4^{3-}$, $Mn_3(PO_4)_2$, 粉白
+$Zn^{2+}$, $PO_4^{3-}$, $Zn_3(PO_4)_2$, 白
+$Al^{3+}$, $PO_4^{3-}$, $AlPO_4$, 白
+$Cr^{3+}$, $PO_4^{3-}$, $CrPO_4$, 灰綠
+$Ba^{2+}$, $PO_4^{3-}$, $Ba_3(PO_4)_2$, 白
+$Sr^{2+}$, $PO_4^{3-}$, $Sr_3(PO_4)_2$, 白
+$Ca^{2+}$, $PO_4^{3-}$, $Ca_3(PO_4)_2$, 白
+$Mg^{2+}$, $PO_4^{3-}$, $Mg_3(PO_4)_2$, 白
+$Bi^{3+}$, $PO_4^{3-}$, $BiPO_4$, 白
+$Ce^{3+}$, $PO_4^{3-}$, $CePO_4$, 白
+$Ag^+$, $SO_3^{2-}$, $Ag_2SO_3$, 白
+$Pb^{2+}$, $SO_3^{2-}$, $PbSO_3$, 白
+$Ba^{2+}$, $SO_3^{2-}$, $BaSO_3$, 白
+$Sr^{2+}$, $SO_3^{2-}$, $SrSO_3$, 白
+$Ca^{2+}$, $SO_3^{2-}$, $CaSO_3$, 白
+$Mg^{2+}$, $SO_3^{2-}$, $MgSO_3$, 白
+$Cu^{2+}$, $SO_3^{2-}$, $CuSO_3$, 白
+$Zn^{2+}$, $SO_3^{2-}$, $ZnSO_3$, 白
+$Cd^{2+}$, $SO_3^{2-}$, $CdSO_3$, 白
+$Co^{2+}$, $SO_3^{2-}$, $CoSO_3$, 粉紅
+$Ni^{2+}$, $SO_3^{2-}$, $NiSO_3$, 綠
+$Mn^{2+}$, $SO_3^{2-}$, $MnSO_3$, 粉白
+$Fe^{2+}$, $SO_3^{2-}$, $FeSO_3$, 白綠
+$Ag^+$, $C_2O_4^{2-}$, $Ag_2C_2O_4$, 白
+$Pb^{2+}$, $C_2O_4^{2-}$, $PbC_2O_4$, 白
+$Cu^{2+}$, $C_2O_4^{2-}$, $CuC_2O_4$, 淺藍
+$Fe^{2+}$, $C_2O_4^{2-}$, $FeC_2O_4$, 淺黃
+$Co^{2+}$, $C_2O_4^{2-}$, $CoC_2O_4$, 粉紅
+$Ni^{2+}$, $C_2O_4^{2-}$, $NiC_2O_4$, 淺綠
+$Mn^{2+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
+$Zn^{2+}$, $C_2O_4^{2-}$, $ZnC_2O_4$, 白
+$Ba^{2+}$, $C_2O_4^{2-}$, $BaC_2O_4$, 白
+$Sr^{2+}$, $C_2O_4^{2-}$, $SrC_2O_4$, 白
+$Ca^{2+}$, $C_2O_4^{2-}$, $CaC_2O_4$, 白
+$Mg^{2+}$, $C_2O_4^{2-}$, $MgC_2O_4$, 白
+$Cd^{2+}$, $C_2O_4^{2-}$, $CdC_2O_4$, 白
+$Mg^{2+}$, $F^-$, $MgF_2$, 白
+$Ca^{2+}$, $F^-$, $CaF_2$, 白
+$Sr^{2+}$, $F^-$, $SrF_2$, 白
+$Ba^{2+}$, $F^-$, $BaF_2$, 白
+$Pb^{2+}$, $F^-$, $PbF_2$, 白
+$Al^{3+}$, $F^-$, $AlF_3$, 白
+$Li^+$, $F^-$, $LiF$, 白
+$Zn^{2+}$, $F^-$, $ZnF_2$, 白
+$Cd^{2+}$, $F^-$, $CdF_2$, 白
+$Cu^{2+}$, $F^-$, $CuF_2$, 淺藍
+$Fe^{2+}$, $F^-$, $FeF_2$, 白
+$Fe^{3+}$, $F^-$, $FeF_3$, 微綠白
+$Co^{2+}$, $F^-$, $CoF_2$, 粉紅
+$Ni^{2+}$, $F^-$, $NiF_2$, 黃綠
+$Mn^{2+}$, $F^-$, $MnF_2$, 淡粉紅
+$Ce^{3+}$, $F^-$, $CeF_3$, 白
+$Ag^+$, $SiO_3^{2-}$, $Ag_2SiO_3$, 黃
+$Pb^{2+}$, $SiO_3^{2-}$, $PbSiO_3$, 白
+$Cu^{2+}$, $SiO_3^{2-}$, $CuSiO_3$, 藍綠
+$Fe^{2+}$, $SiO_3^{2-}$, $FeSiO_3$, 灰綠
+$Co^{2+}$, $SiO_3^{2-}$, $CoSiO_3$, 紫
+$Ni^{2+}$, $SiO_3^{2-}$, $NiSiO_3$, 黃綠
+$Mn^{2+}$, $SiO_3^{2-}$, $MnSiO_3$, 粉紅
+$Zn^{2+}$, $SiO_3^{2-}$, $ZnSiO_3$, 白
+$Ba^{2+}$, $SiO_3^{2-}$, $BaSiO_3$, 白
+$Sr^{2+}$, $SiO_3^{2-}$, $SrSiO_3$, 白
+$Ca^{2+}$, $SiO_3^{2-}$, $CaSiO_3$, 白
+$Mg^{2+}$, $SiO_3^{2-}$, $MgSiO_3$, 白
+$Al^{3+}$, $SiO_3^{2-}$, $Al_2(SiO_3)_3$, 白
+$Ag^+$, $CN^-$, $AgCN$, 白
+$Pb^{2+}$, $CN^-$, $Pb(CN)_2$, 白
+$Cu^{2+}$, $CN^-$, $Cu(CN)_2$, 白
+$Cu^+$, $CN^-$, $CuCN$, 白
+$Cd^{2+}$, $CN^-$, $Cd(CN)_2$, 白
+$Fe^{2+}$, $CN^-$, $Fe(CN)_2$, 黃
+$Co^{2+}$, $CN^-$, $Co(CN)_2$, 粉紅
+$Ni^{2+}$, $CN^-$, $Ni(CN)_2$, 灰綠
+$Zn^{2+}$, $CN^-$, $Zn(CN)_2$, 白
+$Ag^+$, $SCN^-$, $AgSCN$, 白
+$Pb^{2+}$, $SCN^-$, $Pb(SCN)_2$, 白
+$Cu^+$, $SCN^-$, $CuSCN$, 白
+$Cu^{2+}$, $SCN^-$, $Cu(SCN)_2$, 黑
+$Hg^{2+}$, $SCN^-$, $Hg(SCN)_2$, 白
+$Ag^+$, $AsO_4^{3-}$, $Ag_3AsO_4$, 紅褐
+$Pb^{2+}$, $AsO_4^{3-}$, $Pb_3(AsO_4)_2$, 白
+$Cu^{2+}$, $AsO_4^{3-}$, $Cu_3(AsO_4)_2$, 藍綠
+$Fe^{3+}$, $AsO_4^{3-}$, $FeAsO_4$, 黃白
+$Zn^{2+}$, $AsO_4^{3-}$, $Zn_3(AsO_4)_2$, 白
+$Ca^{2+}$, $AsO_4^{3-}$, $Ca_3(AsO_4)_2$, 白
+$Mg^{2+}$, $AsO_4^{3-}$, $Mg_3(AsO_4)_2$, 白
+$Ba^{2+}$, $AsO_4^{3-}$, $Ba_3(AsO_4)_2$, 白
+$Ni^{2+}$, $AsO_4^{3-}$, $Ni_3(AsO_4)_2$, 綠
+$Co^{2+}$, $AsO_4^{3-}$, $Co_3(AsO_4)_2$, 粉紅
+$Ag^+$, $BO_3^{3-}$, $Ag_3BO_3$, 白
+$Pb^{2+}$, $BO_3^{3-}$, $Pb_3(BO_3)_2$, 白
+$Cu^{2+}$, $BO_3^{3-}$, $Cu_3(BO_3)_2$, 藍
+$Ba^{2+}$, $BO_3^{3-}$, $Ba_3(BO_3)_2$, 白
+$Ca^{2+}$, $BO_3^{3-}$, $Ca_3(BO_3)_2$, 白
+$Mg^{2+}$, $BO_3^{3-}$, $Mg_3(BO_3)_2$, 白
+$Zn^{2+}$, $BO_3^{3-}$, $Zn_3(BO_3)_2$, 白
+$Na^+$, $Cl^-$, $NaCl$, 溶
+$Na^+$, $Br^-$, $NaBr$, 溶
+$Na^+$, $I^-$, $NaI$, 溶
+$Na^+$, $OH^-$, $NaOH$, 溶
+$Na^+$, $NO_3^-$, $NaNO_3$, 溶
+$Na^+$, $CH_3COO^-$, $NaCH_3COO$, 溶
+$Na^+$, $CN^-$, $NaCN$, 溶
+$Na^+$, $SCN^-$, $NaSCN$, 溶
+$Na^+$, $F^-$, $NaF$, 溶
+$Na^+$, $S^{2-}$, $Na_2S$, 溶
+$Na^+$, $CO_3^{2-}$, $Na_2CO_3$, 溶
+$Na^+$, $SO_4^{2-}$, $Na_2SO_4$, 溶
+$Na^+$, $CrO_4^{2-}$, $Na_2CrO_4$, 溶
+$Na^+$, $SO_3^{2-}$, $Na_2SO_3$, 溶
+$Na^+$, $C_2O_4^{2-}$, $Na_2C_2O_4$, 溶
+$Na^+$, $SiO_3^{2-}$, $Na_2SiO_3$, 溶
+$Na^+$, $PO_4^{3-}$, $Na_3PO_4$, 溶
+$Na^+$, $AsO_4^{3-}$, $Na_3AsO_4$, 溶
+$Na^+$, $BO_3^{3-}$, $Na_3BO_3$, 溶
+$K^+$, $Cl^-$, $KCl$, 溶
+$K^+$, $Br^-$, $KBr$, 溶
+$K^+$, $I^-$, $KI$, 溶
+$K^+$, $OH^-$, $KOH$, 溶
+$K^+$, $NO_3^-$, $KNO_3$, 溶
+$K^+$, $CH_3COO^-$, $KCH_3COO$, 溶
+$K^+$, $CN^-$, $KCN$, 溶
+$K^+$, $SCN^-$, $KSCN$, 溶
+$K^+$, $F^-$, $KF$, 溶
+$K^+$, $S^{2-}$, $K_2S$, 溶
+$K^+$, $CO_3^{2-}$, $K_2CO_3$, 溶
+$K^+$, $SO_4^{2-}$, $K_2SO_4$, 溶
+$K^+$, $CrO_4^{2-}$, $K_2CrO_4$, 溶
+$K^+$, $SO_3^{2-}$, $K_2SO_3$, 溶
+$K^+$, $C_2O_4^{2-}$, $K_2C_2O_4$, 溶
+$K^+$, $SiO_3^{2-}$, $K_2SiO_3$, 溶
+$K^+$, $PO_4^{3-}$, $K_3PO_4$, 溶
+$K^+$, $AsO_4^{3-}$, $K_3AsO_4$, 溶
+$K^+$, $BO_3^{3-}$, $K_3BO_3$, 溶
+$Li^+$, $Cl^-$, $LiCl$, 溶
+$Li^+$, $Br^-$, $LiBr$, 溶
+$Li^+$, $I^-$, $LiI$, 溶
+$Li^+$, $OH^-$, $LiOH$, 溶
+$Li^+$, $NO_3^-$, $LiNO_3$, 溶
+$Li^+$, $CH_3COO^-$, $LiCH_3COO$, 溶
+$Li^+$, $CN^-$, $LiCN$, 溶
+$Li^+$, $SCN^-$, $LiSCN$, 溶
+$Li^+$, $S^{2-}$, $Li_2S$, 溶
+$Li^+$, $SO_4^{2-}$, $Li_2SO_4$, 溶
+$Li^+$, $CrO_4^{2-}$, $Li_2CrO_4$, 溶
+$Li^+$, $SO_3^{2-}$, $Li_2SO_3$, 溶
+$Li^+$, $C_2O_4^{2-}$, $Li_2C_2O_4$, 溶
+$Li^+$, $SiO_3^{2-}$, $Li_2SiO_3$, 溶
+$Li^+$, $AsO_4^{3-}$, $Li_3AsO_4$, 溶
+$Li^+$, $BO_3^{3-}$, $Li_3BO_3$, 溶
+$NH_4^+$, $Cl^-$, $NH_4Cl$, 溶
+$NH_4^+$, $Br^-$, $NH_4Br$, 溶
+$NH_4^+$, $I^-$, $NH_4I$, 溶
+$NH_4^+$, $OH^-$, $NH_4OH$, 溶
+$NH_4^+$, $NO_3^-$, $NH_4NO_3$, 溶
+$NH_4^+$, $CH_3COO^-$, $NH_4CH_3COO$, 溶
+$NH_4^+$, $CN^-$, $NH_4CN$, 溶
+$NH_4^+$, $SCN^-$, $NH_4SCN$, 溶
+$NH_4^+$, $F^-$, $NH_4F$, 溶
+$NH_4^+$, $S^{2-}$, $(NH_4)_2S$, 溶
+$NH_4^+$, $CO_3^{2-}$, $(NH_4)_2CO_3$, 溶
+$NH_4^+$, $SO_4^{2-}$, $(NH_4)_2SO_4$, 溶
+$NH_4^+$, $CrO_4^{2-}$, $(NH_4)_2CrO_4$, 溶
+$NH_4^+$, $SO_3^{2-}$, $(NH_4)_2SO_3$, 溶
+$NH_4^+$, $C_2O_4^{2-}$, $(NH_4)_2C_2O_4$, 溶
+$NH_4^+$, $SiO_3^{2-}$, $(NH_4)_2SiO_3$, 溶
+$NH_4^+$, $PO_4^{3-}$, $(NH_4)_3PO_4$, 溶
+$NH_4^+$, $AsO_4^{3-}$, $(NH_4)_3AsO_4$, 溶
+$NH_4^+$, $BO_3^{3-}$, $(NH_4)_3BO_3$, 溶
+$Ag^+$, $NO_3^-$, $AgNO_3$, 溶
+$Mg^{2+}$, $NO_3^-$, $Mg(NO_3)_2$, 溶
+$Mg^{2+}$, $CH_3COO^-$, $Mg(CH_3COO)_2$, 溶
+$Ca^{2+}$, $NO_3^-$, $Ca(NO_3)_2$, 溶
+$Ca^{2+}$, $CH_3COO^-$, $Ca(CH_3COO)_2$, 溶
+$Sr^{2+}$, $NO_3^-$, $Sr(NO_3)_2$, 溶
+$Sr^{2+}$, $CH_3COO^-$, $Sr(CH_3COO)_2$, 溶
+$Ba^{2+}$, $NO_3^-$, $Ba(NO_3)_2$, 溶
+$Ba^{2+}$, $CH_3COO^-$, $Ba(CH_3COO)_2$, 溶
+$Cu^{2+}$, $NO_3^-$, $Cu(NO_3)_2$, 溶
+$Cu^{2+}$, $CH_3COO^-$, $Cu(CH_3COO)_2$, 溶
+$Fe^{2+}$, $NO_3^-$, $Fe(NO_3)_2$, 溶
+$Fe^{2+}$, $CH_3COO^-$, $Fe(CH_3COO)_2$, 溶
+$Zn^{2+}$, $NO_3^-$, $Zn(NO_3)_2$, 溶
+$Zn^{2+}$, $CH_3COO^-$, $Zn(CH_3COO)_2$, 溶
+$Ni^{2+}$, $NO_3^-$, $Ni(NO_3)_2$, 溶
+$Ni^{2+}$, $CH_3COO^-$, $Ni(CH_3COO)_2$, 溶
+$Co^{2+}$, $NO_3^-$, $Co(NO_3)_2$, 溶
+$Co^{2+}$, $CH_3COO^-$, $Co(CH_3COO)_2$, 溶
+$Mn^{2+}$, $NO_3^-$, $Mn(NO_3)_2$, 溶
+$Mn^{2+}$, $CH_3COO^-$, $Mn(CH_3COO)_2$, 溶
+$Cd^{2+}$, $NO_3^-$, $Cd(NO_3)_2$, 溶
+$Cd^{2+}$, $CH_3COO^-$, $Cd(CH_3COO)_2$, 溶
+$Sn^{2+}$, $NO_3^-$, $Sn(NO_3)_2$, 溶
+$Sn^{2+}$, $CH_3COO^-$, $Sn(CH_3COO)_2$, 溶
+$Pb^{2+}$, $NO_3^-$, $Pb(NO_3)_2$, 溶
+$Pb^{2+}$, $CH_3COO^-$, $Pb(CH_3COO)_2$, 溶
+$Hg^{2+}$, $NO_3^-$, $Hg(NO_3)_2$, 溶
+$Hg^{2+}$, $CH_3COO^-$, $Hg(CH_3COO)_2$, 溶
+$Al^{3+}$, $NO_3^-$, $Al(NO_3)_3$, 溶
+$Al^{3+}$, $CH_3COO^-$, $Al(CH_3COO)_3$, 溶
+$Fe^{3+}$, $NO_3^-$, $Fe(NO_3)_3$, 溶
+$Fe^{3+}$, $CH_3COO^-$, $Fe(CH_3COO)_3$, 溶
+$Cr^{3+}$, $NO_3^-$, $Cr(NO_3)_3$, 溶
+$Cr^{3+}$, $CH_3COO^-$, $Cr(CH_3COO)_3$, 溶
+$Bi^{3+}$, $NO_3^-$, $Bi(NO_3)_3$, 溶
+$Bi^{3+}$, $CH_3COO^-$, $Bi(CH_3COO)_3$, 溶
+$Mg^{2+}$, $Cl^-$, $MgCl_2$, 溶
+$Mg^{2+}$, $Br^-$, $MgBr_2$, 溶
+$Mg^{2+}$, $I^-$, $MgI_2$, 溶
+$Ca^{2+}$, $Cl^-$, $CaCl_2$, 溶
+$Ca^{2+}$, $Br^-$, $CaBr_2$, 溶
+$Ca^{2+}$, $I^-$, $CaI_2$, 溶
+$Sr^{2+}$, $Cl^-$, $SrCl_2$, 溶
+$Sr^{2+}$, $Br^-$, $SrBr_2$, 溶
+$Sr^{2+}$, $I^-$, $SrI_2$, 溶
+$Ba^{2+}$, $Cl^-$, $BaCl_2$, 溶
+$Ba^{2+}$, $Br^-$, $BaBr_2$, 溶
+$Ba^{2+}$, $I^-$, $BaI_2$, 溶
+$Cu^{2+}$, $Cl^-$, $CuCl_2$, 溶
+$Cu^{2+}$, $Br^-$, $CuBr_2$, 溶
+$Fe^{2+}$, $Cl^-$, $FeCl_2$, 溶
+$Fe^{2+}$, $Br^-$, $FeBr_2$, 溶
+$Fe^{2+}$, $I^-$, $FeI_2$, 溶
+$Zn^{2+}$, $Cl^-$, $ZnCl_2$, 溶
+$Zn^{2+}$, $Br^-$, $ZnBr_2$, 溶
+$Zn^{2+}$, $I^-$, $ZnI_2$, 溶
+$Ni^{2+}$, $Cl^-$, $NiCl_2$, 溶
+$Ni^{2+}$, $Br^-$, $NiBr_2$, 溶
+$Ni^{2+}$, $I^-$, $NiI_2$, 溶
+$Co^{2+}$, $Cl^-$, $CoCl_2$, 溶
+$Co^{2+}$, $Br^-$, $CoBr_2$, 溶
+$Co^{2+}$, $I^-$, $CoI_2$, 溶
+$Mn^{2+}$, $Cl^-$, $MnCl_2$, 溶
+$Mn^{2+}$, $Br^-$, $MnBr_2$, 溶
+$Mn^{2+}$, $I^-$, $MnI_2$, 溶
+$Cd^{2+}$, $Cl^-$, $CdCl_2$, 溶
+$Cd^{2+}$, $Br^-$, $CdBr_2$, 溶
+$Cd^{2+}$, $I^-$, $CdI_2$, 溶
+$Sn^{2+}$, $Cl^-$, $SnCl_2$, 溶
+$Sn^{2+}$, $Br^-$, $SnBr_2$, 溶
+$Sn^{2+}$, $I^-$, $SnI_2$, 溶
+$Hg^{2+}$, $Cl^-$, $HgCl_2$, 溶
+$Hg^{2+}$, $Br^-$, $HgBr_2$, 溶
+$Al^{3+}$, $Cl^-$, $AlCl_3$, 溶
+$Al^{3+}$, $Br^-$, $AlBr_3$, 溶
+$Al^{3+}$, $I^-$, $AlI_3$, 溶
+$Fe^{3+}$, $Cl^-$, $FeCl_3$, 溶
+$Fe^{3+}$, $Br^-$, $FeBr_3$, 溶
+$Cr^{3+}$, $Cl^-$, $CrCl_3$, 溶
+$Cr^{3+}$, $Br^-$, $CrBr_3$, 溶
+$Cr^{3+}$, $I^-$, $CrI_3$, 溶
+$Bi^{3+}$, $Cl^-$, $BiCl_3$, 溶
+$Bi^{3+}$, $Br^-$, $BiBr_3$, 溶
+$Mg^{2+}$, $SO_4^{2-}$, $MgSO_4$, 溶
+$Cu^{2+}$, $SO_4^{2-}$, $CuSO_4$, 溶
+$Fe^{2+}$, $SO_4^{2-}$, $FeSO_4$, 溶
+$Zn^{2+}$, $SO_4^{2-}$, $ZnSO_4$, 溶
+$Ni^{2+}$, $SO_4^{2-}$, $NiSO_4$, 溶
+$Co^{2+}$, $SO_4^{2-}$, $CoSO_4$, 溶
+$Mn^{2+}$, $SO_4^{2-}$, $MnSO_4$, 溶
+$Cd^{2+}$, $SO_4^{2-}$, $CdSO_4$, 溶
+$Sn^{2+}$, $SO_4^{2-}$, $SnSO_4$, 溶
+$Hg^{2+}$, $SO_4^{2-}$, $HgSO_4$, 溶
+$Al^{3+}$, $SO_4^{2-}$, $Al_2(SO_4)_3$, 溶
+$Fe^{3+}$, $SO_4^{2-}$, $Fe_2(SO_4)_3$, 溶
+$Cr^{3+}$, $SO_4^{2-}$, $Cr_2(SO_4)_3$, 溶
+$Bi^{3+}$, $SO_4^{2-}$, $Bi_2(SO_4)_3$, 溶
+$Ba^{2+}$, $OH^-$, $Ba(OH)_2$, 溶
+$Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
+`;
+
+        // --- 顏色分群映射與樣式設定 ---
+        const colorMapping = {
+            "白": "白", "淡黃": "淡黃", "黃": "黃", "金黃": "黃", "微黃": "淡黃", "淺黃": "淡黃",
+            "黃綠": "黃綠", "紅": "紅", "黑褐": "黑", "黑": "黑", "棕黑": "黑", "灰黑": "黑",
+            "棕": "棕", "棕褐": "棕", "橘紅": "橘", "橘": "橘", "肉色": "粉紅/肉色", "淡粉紅": "粉紅/肉色",
+            "粉紅": "粉紅/肉色", "淺藍": "淺藍", "藍": "藍", "灰綠": "淺綠/灰綠", "淺綠": "淺綠/灰綠",
+            "白綠": "淺綠/灰綠", "紅褐": "紅褐/磚紅", "磚紅": "紅褐/磚紅", "棕紅": "紅褐/磚紅",
+            "蘋果綠": "綠", "綠": "綠", "淡紫": "紫", "粉紫": "紫", "紫": "紫", "藍綠": "藍綠",
+            "粉白": "白", "黃白": "白", "微綠白": "白"
+        };
+
+        const colorStyles = {
+            "白": { bg: "#FFFFFF", text: "#333", border: "#CCC" },
+            "淡黃": { bg: "#FFF9C4", text: "#333", border: "#F4D03F" },
+            "黃": { bg: "#F1C40F", text: "#333", border: "#D4AC0D" },
+            "橘": { bg: "#F39C12", text: "#FFF", border: "#D68910" },
+            "紅": { bg: "#E74C3C", text: "#FFF", border: "#C0392B" },
+            "紅褐/磚紅": { bg: "#C0392B", text: "#FFF", border: "#922B21" },
+            "棕": { bg: "#873600", text: "#FFF", border: "#6E2C00" },
+            "黑": { bg: "#2C3E50", text: "#FFF", border: "#1A252F" },
+            "淺綠/灰綠": { bg: "#A9DFBF", text: "#333", border: "#7DCEA0" },
+            "綠": { bg: "#27AE60", text: "#FFF", border: "#1E8449" },
+            "黃綠": { bg: "#9ACD32", text: "#333", border: "#6B8E23" },
+            "藍綠": { bg: "#1ABC9C", text: "#FFF", border: "#117864" },
+            "淺藍": { bg: "#AED6F1", text: "#333", border: "#5DADE2" },
+            "藍": { bg: "#2980B9", text: "#FFF", border: "#1F618D" },
+            "粉紅/肉色": { bg: "#F5B7B1", text: "#333", border: "#E6B0AA" },
+            "紫": { bg: "#9B59B6", text: "#FFF", border: "#76448A" }
+        };
+
+        // 按鈕顯示順序
+        const colorOrder = ["白", "淡黃", "黃", "橘", "紅", "紅褐/磚紅", "棕", "黑", "淺綠/灰綠", "綠", "黃綠", "藍綠", "淺藍", "藍", "粉紅/肉色", "紫"];
+
+        let database = [];
+        let cationsMap = {};
+        let anionsMap = {};
+        let uniqueSimplifiedColors = new Set();
+
+        // [完美修正]：正確處理大括號下標與單一字元下標 (解決 O4 變下標的問題)
+        function formatFormula(texStr) {
+            let s = texStr.replace(/\$/g, '').trim();
+            s = s.replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>');
+            s = s.replace(/_\{([^}]+)\}/g, '<sub>$1</sub>');
+            // 只抓取單一字元作為下標，完美對應標準 LaTeX 邏輯
+            s = s.replace(/\^([a-zA-Z0-9+-])/g, '<sup>$1</sup>');
+            s = s.replace(/_([a-zA-Z0-9+-])/g, '<sub>$1</sub>');
+            return s;
+        }
+
+        function getRawId(texStr) {
+            return texStr.replace(/[\$\{\}\^_]/g, '').trim();
+        }
+
+        function parseData() {
+            const lines = rawTextData.trim().split('\n');
+            lines.forEach(line => {
+                if(!line.trim()) return;
+                const parts = line.split(',').map(p => p.trim());
+                if(parts.length === 4) {
+                    const cid = getRawId(parts[0]), aid = getRawId(parts[1]);
+                    
+                    if (!cationsMap[cid]) cationsMap[cid] = { id: cid, html: formatFormula(parts[0]) };
+                    if (!anionsMap[aid]) anionsMap[aid] = { id: aid, html: formatFormula(parts[1]) };
+
+                    let isPpt = false, color = null, pureColor = null, simplifiedColor = null;
+
+                    if (parts[3] !== '溶') {
+                        isPpt = true;
+                        color = parts[3];
+                        pureColor = parts[3].replace('（微溶）', '').trim();
+                        simplifiedColor = colorMapping[pureColor] || pureColor;
+                        uniqueSimplifiedColors.add(simplifiedColor);
+                    }
+
+                    database.push({
+                        cid: cid, aid: aid,
+                        cHtml: formatFormula(parts[0]), aHtml: formatFormula(parts[1]),
+                        compoundHtml: formatFormula(parts[2]),
+                        isPpt: isPpt, color: color, pureColor: pureColor, simplifiedColor: simplifiedColor
+                    });
+                }
+            });
+        }
+
+        let selectedCations = [], selectedAnions = [];
+        let mistakes = JSON.parse(localStorage.getItem('chemMistakesV2')) || [];
+        let currentQ = null, userGuessPpt = null, userGuessColor = null;
+
+        function init() {
+            parseData();
+            const savedC = JSON.parse(localStorage.getItem('chemCationsV2'));
+            const savedA = JSON.parse(localStorage.getItem('chemAnionsV2'));
+            selectedCations = savedC || Object.keys(cationsMap);
+            selectedAnions = savedA || Object.keys(anionsMap);
+
+            renderSettings();
+            renderColorButtons();
+            nextQuestion();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.add('active');
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+            if (tabId === 'mistakes') renderMistakes();
+        }
+
+        function renderColorButtons() {
+            const container = document.getElementById('color-options');
+            container.innerHTML = '';
+            
+            // 將顏色依照自訂陣列排序，排版更直覺
+            let colorsArray = Array.from(uniqueSimplifiedColors).sort((a, b) => {
+                let idxA = colorOrder.indexOf(a);
+                let idxB = colorOrder.indexOf(b);
+                return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+            });
+            
+            colorsArray.forEach(col => {
+                const style = colorStyles[col] || { bg: "#f9f9f9", text: "#333", border: "#ccc" };
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                btn.innerText = col;
+                btn.style.backgroundColor = style.bg;
+                btn.style.color = style.text;
+                btn.style.border = `2px solid ${style.border}`;
+                btn.onclick = () => selectColor(col, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function nextQuestion() {
+            const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
+
+            if (validQuestions.length === 0) {
+                document.getElementById('ion-display').innerHTML = '<span style="color:red; font-size:1.2rem;">你勾選的組合沒有對應的資料，請去設定區多勾選一些喔！</span>';
+                document.getElementById('submit-btn').disabled = true;
+                return;
+            }
+
+            userGuessPpt = null;
+            userGuessColor = null;
+            document.getElementById('btn-precip-no').classList.remove('selected');
+            document.getElementById('btn-precip-yes').classList.remove('selected');
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('color-options').style.display = 'none';
+            document.getElementById('color-hint').style.display = 'none';
+            
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'block';
+            document.getElementById('submit-btn').disabled = true;
+
+            currentQ = validQuestions[Math.floor(Math.random() * validQuestions.length)];
+            document.getElementById('ion-display').innerHTML = `${currentQ.cHtml} &nbsp;+&nbsp; ${currentQ.aHtml}`;
+        }
+
+        function selectPrecipitate(isPpt) {
+            userGuessPpt = isPpt;
+            document.getElementById('btn-precip-no').classList.toggle('selected', !isPpt);
+            document.getElementById('btn-precip-yes').classList.toggle('selected', isPpt);
+            
+            if (isPpt) {
+                document.getElementById('color-options').style.display = 'flex';
+                document.getElementById('color-hint').style.display = 'block';
+                document.getElementById('submit-btn').disabled = (userGuessColor === null);
+            } else {
+                document.getElementById('color-options').style.display = 'none';
+                document.getElementById('color-hint').style.display = 'none';
+                userGuessColor = null;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('submit-btn').disabled = false;
+            }
+        }
+
+        function selectColor(colorName, btnElement) {
+            userGuessColor = colorName;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            document.getElementById('submit-btn').disabled = false;
+        }
+
+        function checkAnswer() {
+            const actual = currentQ;
+            let isCorrect = false;
+
+            // 判斷時比對的是「簡化後的分類顏色」
+            if (!userGuessPpt && !actual.isPpt) {
+                isCorrect = true;
+            } else if (userGuessPpt && actual.isPpt && userGuessColor === actual.simplifiedColor) {
+                isCorrect = true;
+            }
+
+            const feedbackEl = document.getElementById('feedback');
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
+
+            let resultFormulaHtml = `<div class="result-formula">${actual.compoundHtml}</div>`;
+            
+            if (isCorrect) {
+                // 但答對後，告訴他的還是「真正的顏色」，讓他加深印象
+                feedbackEl.innerHTML = `🎉 <b>答對了！</b><br>${resultFormulaHtml}<br>` + 
+                    (actual.isPpt ? `產生 <b>${actual.color}</b> 沉澱。` : `可溶於水 (不沉澱)。`);
+                feedbackEl.className = 'feedback correct';
+            } else {
+                let actualText = actual.isPpt ? `會沉澱，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
+                let userText = userGuessPpt ? `會沉澱 (${userGuessColor})` : `不會沉澱`;
+                
+                feedbackEl.innerHTML = `❌ <b>答錯了。</b><br>
+                    ${resultFormulaHtml}<br>
+                    正確答案應為：${actualText}<br>
+                    <span style="font-size:0.95rem; color:#666;">(你選的是：${userText})</span>`;
+                feedbackEl.className = 'feedback wrong';
+                
+                recordMistake(actual, actualText, userText);
+            }
+        }
+
+        function recordMistake(q, actualText, userText) {
+            const htmlText = `${q.cHtml} + ${q.aHtml}`;
+            mistakes = mistakes.filter(m => m.htmlText !== htmlText);
+            mistakes.unshift({
+                qText: `${q.cid} + ${q.aid}`,
+                htmlText: htmlText, compoundHtml: q.compoundHtml,
+                actualText: actualText.replace(/<\/?b>/g, ''), userText: userText
+            });
+            if (mistakes.length > 100) mistakes.pop();
+            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes));
+        }
+
+        function renderMistakes() {
+            const list = document.getElementById('mistakes-list');
+            list.innerHTML = '';
+            if (mistakes.length === 0) {
+                list.innerHTML = '<div class="empty-msg">✨ 目前沒有錯題紀錄，太神啦！繼續保持！ ✨</div>';
+                return;
+            }
+            mistakes.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'mistake-item';
+                div.innerHTML = `
+                    <div class="mistake-header">${m.htmlText} ➔ <span style="color:#333;">${m.compoundHtml}</span></div>
+                    <div class="mistake-detail">正確答案：<b>${m.actualText}</b><br>你當時選：${m.userText}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function copyMistakes() {
+            if (mistakes.length === 0) return alert("目前沒有錯題可以複製！");
+            let text = "【錯題本】\n\n";
+            mistakes.forEach((m, idx) => {
+                text += `${idx + 1}. ${m.qText} -> 產物: ${m.compoundHtml.replace(/<[^>]*>?/gm, '')}\n   正解：${m.actualText}\n   錯答：${m.userText}\n\n`;
+            });
+            navigator.clipboard.writeText(text).then(() => alert("✅ 錯題已成功複製！")).catch(() => alert("複製失敗"));
+        }
+
+        function clearMistakes() {
+            if(confirm("確定要清空所有錯題紀錄嗎？")) {
+                mistakes = []; localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); renderMistakes();
+            }
+        }
+
+        function renderSettings() {
+            const cGrid = document.getElementById('cations-settings'), aGrid = document.getElementById('anions-settings');
+            cGrid.innerHTML = ''; aGrid.innerHTML = '';
+            Object.values(cationsMap).sort((a, b) => a.id.localeCompare(b.id)).forEach(c => {
+                const lbl = document.createElement('label'); lbl.className = 'checkbox-label';
+                lbl.innerHTML = `<input type="checkbox" value="${c.id}" ${selectedCations.includes(c.id) ? 'checked' : ''}> <span style="font-size:1.1rem;">${c.html}</span>`;
+                cGrid.appendChild(lbl);
+            });
+            Object.values(anionsMap).sort((a, b) => a.id.localeCompare(b.id)).forEach(a => {
+                const lbl = document.createElement('label'); lbl.className = 'checkbox-label';
+                lbl.innerHTML = `<input type="checkbox" value="${a.id}" ${selectedAnions.includes(a.id) ? 'checked' : ''}> <span style="font-size:1.1rem;">${a.html}</span>`;
+                aGrid.appendChild(lbl);
+            });
+        }
+
+        function toggleAll(type, check) {
+            document.querySelectorAll(`#${type}-settings input[type="checkbox"]`).forEach(input => input.checked = check);
+        }
+
+        function saveSettings() {
+            selectedCations = Array.from(document.querySelectorAll('#cations-settings input:checked')).map(i => i.value);
+            selectedAnions = Array.from(document.querySelectorAll('#anions-settings input:checked')).map(i => i.value);
+            localStorage.setItem('chemCationsV2', JSON.stringify(selectedCations));
+            localStorage.setItem('chemAnionsV2', JSON.stringify(selectedAnions));
+            alert('✅ 設定已儲存！'); switchTab('practice'); nextQuestion();
+        }
+
+	function setHighSchool() {
+            // 根據你的截圖設定的範圍名單
+            const hsCations = ["Ag+", "Al3+", "Ba2+", "Ca2+", "Cr3+", "Cu+", "Cu2+", "Fe2+", "Fe3+", "Hg2+", "Hg22+", "K+", "Li+", "Mg2+", "Mn2+", "Na+", "NH4+", "Ni2+", "Pb2+", "Sr2+", "Tl+", "Zn2+"];
+            const hsAnions = ["Br-", "CH3COO-", "Cl-", "CO32-", "CrO42-", "F-", "I-", "NO3-", "OH-", "S2-", "SO32-", "SO42-"];
+            
+            // 自動勾選對應的陽離子
+            document.querySelectorAll('#cations-settings input[type="checkbox"]').forEach(input => {
+                input.checked = hsCations.includes(input.value);
+            });
+            // 自動勾選對應的陰離子
+            document.querySelectorAll('#anions-settings input[type="checkbox"]').forEach(input => {
+                input.checked = hsAnions.includes(input.value);
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
