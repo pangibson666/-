@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V3.1</title>
+    <title>沉澱試煉 V3.2</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -72,7 +72,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V3.1</header>
+    <header>沉澱試煉 V3.2</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -927,6 +927,8 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 list.innerHTML = '<div class="empty-msg">✨ 目前沒有錯題紀錄，太神啦！繼續保持！ ✨</div>';
                 return;
             }
+            
+            // 生成所有錯題列表
             mistakes.forEach((m, idx) => {
                 const div = document.createElement('div');
                 div.className = 'mistake-item';
@@ -936,18 +938,25 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                             <div class="mistake-header">${m.htmlText} ➔ <span style="color:#333;">${m.compoundHtml}</span></div>
                             <div class="mistake-detail">正確答案：<b>${m.actualText}</b><br>狀態：${m.userText}</div>
                         </div>
-                        <!-- 把 onclick 拿掉，改加上 class="delete-btn" 與 data-index -->
                         <button class="delete-btn" data-index="${idx}" style="background:none; border:none; color:var(--wrong); font-size:1.5rem; cursor:pointer; padding:0 5px;" title="刪除此紀錄">✖</button>
                     </div>`;
-                list.appendChild(div); // 在 list.appendChild(div) 的迴圈結束後，緊接著加上這段：
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        // 抓取剛剛綁在按鈕上的 data-index
-                        const index = parseInt(this.getAttribute('data-index'));
-                        removeMistake(index);
-                    });
+                list.appendChild(div); 
+            }); 
+            // 💡 修正 1：迴圈結束後，在這裡統一把所有生成的 delete-btn 綁定點擊事件
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    removeMistake(index);
                 });
             });
+        }
+
+        // 💡 修正 2：補上刪除單一紀錄用的函數 (放在 renderMistakes 下方即可)
+        function removeMistake(index) {
+            mistakes.splice(index, 1); // 將該筆資料從陣列中刪除
+            localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); // 更新本地儲存
+            renderMistakes(); // 重新渲染畫面
         }
 
         function manualAddMistake() {
