@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V3.4</title>
+    <title>沉澱試煉 V3.6</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -12,6 +12,7 @@
             --text-main: #333333;
             --correct: #27AE60;
             --wrong: #E74C3C;
+            --solubility: #9B59B6; /* 微溶/難溶專屬顏色 */
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; background-color: var(--bg-color); color: var(--text-main); }
@@ -34,7 +35,13 @@
         .btn:hover { background: #eef5ff; transform: scale(1.02); }
         .btn.selected { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4); }
 
-        .color-options { display: none; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #eee; }
+        /* 微溶/難溶 選項樣式 */
+        .sol-options { display: none; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .sol-btn { flex: 1; padding: 10px 20px; border: 2px dashed var(--solubility); background: white; color: var(--solubility); border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; max-width: 150px; }
+        .sol-btn:hover { background: #f9f2fc; transform: scale(1.02); }
+        .sol-btn.selected { background: var(--solubility); color: white; border-style: solid; box-shadow: 0 2px 8px rgba(155, 89, 182, 0.4); }
+
+        .color-options { display: none; flex-wrap: wrap; justify-content: center; gap: 12px; padding-top: 20px; border-top: 2px dashed #eee; }
         .color-btn { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .color-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .color-btn.selected { outline: 4px solid var(--primary); outline-offset: 2px; transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -72,7 +79,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V3.4</header>
+    <header>沉澱試煉 V3.6</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -95,6 +102,12 @@
                     <button class="btn" id="btn-precip-yes" onclick="selectPrecipitate(true)">會沉澱</button>
                 </div>
 
+                <!-- 微溶/難溶選項 -->
+                <div id="solubility-options" class="sol-options">
+                    <button class="sol-btn" id="btn-sol-slightly" onclick="selectSolubility(true)">微溶</button>
+                    <button class="sol-btn" id="btn-sol-insoluble" onclick="selectSolubility(false)">難溶</button>
+                </div>
+
                 <div id="color-options" class="color-options"></div>
                 <div id="color-hint" class="color-hint">💡 系統已自動進行相近色合併（例：微綠白歸類在「白」、淺黃歸類在「淡黃」）。</div>
 
@@ -111,22 +124,18 @@
                 <h2 style="color: var(--primary);">⏱️ 限時挑戰模式</h2>
                 <p style="font-size: 1.1rem; color: #555; margin-bottom: 20px;">選擇挑戰時間，在時限內盡可能答對越多題目！<br>不須等待回饋畫面，答錯的題目會自動加入錯題本中。</p>
                 <div class="btn-group" style="flex-direction: column; gap: 20px; align-items: center;">
-                    
                     <div style="width: 100%; max-width: 320px;">
                         <button class="btn" style="width: 100%; max-width: 100%; padding: 15px;" onclick="startChallenge(30)">🔥 30 秒 極速挑戰</button>
                         <div id="record-30" class="record-text"></div>
                     </div>
-                    
                     <div style="width: 100%; max-width: 320px;">
                         <button class="btn" style="width: 100%; max-width: 100%; padding: 15px;" onclick="startChallenge(60)">⚡ 1 分鐘 專注挑戰</button>
                         <div id="record-60" class="record-text"></div>
                     </div>
-
                     <div style="width: 100%; max-width: 320px;">
                         <button class="btn" style="width: 100%; max-width: 100%; padding: 15px;" onclick="startChallenge(180)">🏆 3 分鐘 耐力挑戰</button>
                         <div id="record-180" class="record-text"></div>
                     </div>
-
                 </div>
             </div>
 
@@ -142,6 +151,11 @@
                 <div class="btn-group">
                     <button class="btn" id="btn-chal-precip-no" onclick="selectChalPrecipitate(false)">不會沉澱</button>
                     <button class="btn" id="btn-chal-precip-yes" onclick="selectChalPrecipitate(true)">會沉澱</button>
+                </div>
+
+                <div id="chal-solubility-options" class="sol-options">
+                    <button class="sol-btn" id="btn-chal-sol-slightly" onclick="selectChalSolubility(true)">微溶</button>
+                    <button class="sol-btn" id="btn-chal-sol-insoluble" onclick="selectChalSolubility(false)">難溶</button>
                 </div>
 
                 <div id="chal-color-options" class="color-options"></div>
@@ -194,7 +208,7 @@
     </div>
 
     <script>
-        // --- 資料庫 ---
+        // --- 資料庫 (已將指定沈澱替換為「微溶」標記) ---
         const rawTextData = `
 $Na^+$, $NO_3^-$, $NaNO_3$, 溶
 $Na^+$, $CH_3COO^-$, $NaCH_3COO$, 溶
@@ -253,10 +267,10 @@ $Ca^{2^+}$, $CH_3COO^-$, $Ca(CH_3COO)_2$, 溶
 $Ca^{2^+}$, $Cl^-$, $CaCl_2$, 溶
 $Ca^{2^+}$, $Br^-$, $CaBr_2$, 溶
 $Ca^{2^+}$, $I^-$, $CaI_2$, 溶
-$Ca^{2^+}$, $SO_4^{2-}$, $CaSO_4$, 白
+$Ca^{2^+}$, $SO_4^{2-}$, $CaSO_4$, 白(微溶)
 $Ca^{2^+}$, $CrO_4^{2-}$, $CaCrO_4$, 溶
 $Ca^{2^+}$, $S^{2-}$, $CaS$, 溶
-$Ca^{2^+}$, $OH^-$, $Ca(OH)_2$, 白
+$Ca^{2^+}$, $OH^-$, $Ca(OH)_2$, 白(微溶)
 $Ca^{2^+}$, $PO_4^{3-}$, $Ca_3(PO_4)_2$, 白
 $Ca^{2^+}$, $CO_3^{2-}$, $CaCO_3$, 白
 $Ca^{2^+}$, $SO_3^{2-}$, $CaSO_3$, 白
@@ -323,7 +337,7 @@ $Ag^+$, $CH_3COO^-$, $AgCH_3COO$, 溶
 $Ag^+$, $Cl^-$, $AgCl$, 白
 $Ag^+$, $Br^-$, $AgBr$, 淡黃
 $Ag^+$, $I^-$, $AgI$, 黃
-$Ag^+$, $SO_4^{2-}$, $Ag_2SO_4$, 溶
+$Ag^+$, $SO_4^{2-}$, $Ag_2SO_4$, 白(微溶)
 $Ag^+$, $CrO_4^{2-}$, $Ag_2CrO_4$, 磚紅
 $Ag^+$, $S^{2-}$, $Ag_2S$, 黑
 $Ag^+$, $OH^-$, $Ag_2O$, 棕褐
@@ -333,7 +347,7 @@ $Ag^+$, $SO_3^{2-}$, $Ag_2SO_3$, 白
 $Ag^+$, $C_2O_4^{2-}$, $Ag_2C_2O_4$, 白
 $Pb^{2^+}$, $NO_3^-$, $Pb(NO_3)_2$, 溶
 $Pb^{2^+}$, $CH_3COO^-$, $Pb(CH_3COO)_2$, 溶
-$Pb^{2^+}$, $Cl^-$, $PbCl_2$, 白
+$Pb^{2^+}$, $Cl^-$, $PbCl_2$, 白(微溶)
 $Pb^{2^+}$, $Br^-$, $PbBr_2$, 白
 $Pb^{2^+}$, $I^-$, $PbI_2$, 黃
 $Pb^{2^+}$, $SO_4^{2-}$, $PbSO_4$, 白
@@ -462,26 +476,17 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
         let anionsMap = {};
         let uniqueSimplifiedColors = new Set();
         
-        // 全域變數 - 練習計數與錯題
         let practiceCount = parseInt(localStorage.getItem('chemPracticeCountV2')) || 0;
         let mistakes = JSON.parse(localStorage.getItem('chemMistakesV2')) || [];
-        
-        // 全域變數 - 挑戰紀錄
         let challengeRecords = JSON.parse(localStorage.getItem('chemChalRecordsV2_2')) || {
             30: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} },
             60: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} },
             180: { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} }
         };
 
-        // 挑戰模式狀態
-        let chalInitialTime = 0;
-        let chalTimerInterval = null;
-        let chalTimeLeft = 0;
-        let chalTotal = 0;
-        let chalCorrect = 0;
-        let chalCurrentQ = null;
-        let chalGuessPpt = null;
-        let chalGuessColor = null;
+        let chalInitialTime = 0, chalTimerInterval = null, chalTimeLeft = 0;
+        let chalTotal = 0, chalCorrect = 0;
+        let chalCurrentQ = null, chalGuessPpt = null, chalGuessColor = null, chalGuessSlightly = null;
 
         function formatFormula(texStr) {
             let s = texStr.replace(/\$/g, '').trim();
@@ -507,12 +512,20 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                     if (!cationsMap[cid]) cationsMap[cid] = { id: cid, html: formatFormula(parts[0]) };
                     if (!anionsMap[aid]) anionsMap[aid] = { id: aid, html: formatFormula(parts[1]) };
 
-                    let isPpt = false, color = null, pureColor = null, simplifiedColor = null;
+                    let isPpt = false, color = null, pureColor = null, simplifiedColor = null, isSlightly = false;
+                    let rawState = parts[3];
 
-                    if (parts[3] !== '溶') {
+                    if (rawState !== '溶') {
                         isPpt = true;
-                        color = parts[3];
-                        pureColor = parts[3].replace('（微溶）', '').trim();
+                        if (rawState.includes('微溶')) {
+                            isSlightly = true;
+                            // 把 "(微溶)" 拔除，提取出純顏色字串 (例如 "白")
+                            pureColor = rawState.replace(/\(微溶\)/g, '').replace(/微溶/g, '').trim();
+                            color = pureColor;
+                        } else {
+                            color = rawState;
+                            pureColor = rawState.replace('（微溶）', '').trim();
+                        }
                         simplifiedColor = colorMapping[pureColor] || pureColor;
                         uniqueSimplifiedColors.add(simplifiedColor);
                     }
@@ -521,23 +534,20 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                         cid: cid, aid: aid,
                         cHtml: formatFormula(parts[0]), aHtml: formatFormula(parts[1]),
                         compoundHtml: formatFormula(parts[2]),
-                        isPpt: isPpt, color: color, pureColor: pureColor, simplifiedColor: simplifiedColor
+                        isPpt: isPpt, isSlightly: isSlightly, color: color, pureColor: pureColor, simplifiedColor: simplifiedColor
                     });
                 }
             });
         }
 
         let selectedCations = [], selectedAnions = [];
-        let currentQ = null, userGuessPpt = null, userGuessColor = null;
+        let currentQ = null, userGuessPpt = null, userGuessColor = null, userGuessSlightly = null;
 
         function init() {
             parseData();
-            
             selectedCations = Object.keys(cationsMap);
             selectedAnions = Object.keys(anionsMap);
-
             document.getElementById('practice-count').innerText = practiceCount;
-
             buildColorButtons('color-options', selectColor);
             buildColorButtons('chal-color-options', selectChalColor);
             renderChallengeRecords();
@@ -545,7 +555,6 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
         }
 
         function switchTab(tabId) {
-            // 切換時清除挑戰模式的計時器狀態
             if (tabId !== 'challenge') {
                 if (chalTimerInterval) clearInterval(chalTimerInterval);
                 document.getElementById('challenge-active-screen').style.display = 'none';
@@ -586,6 +595,35 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             });
         }
 
+        /* ----- 抽題邏輯 (符合指定的機率分佈) ----- */
+        function pickRandomQuestion(validQuestions) {
+            const solubleQs = validQuestions.filter(q => !q.isPpt);
+            const insolubleQs = validQuestions.filter(q => q.isPpt);
+            
+            // 50% 挑選可溶，50% 挑選不可溶
+            const randSol = Math.random();
+            if (randSol < 0.5 && solubleQs.length > 0) {
+                return solubleQs[Math.floor(Math.random() * solubleQs.length)];
+            } else if (insolubleQs.length > 0) {
+                // 如果進入不可溶，分出有顏色和白色的題目
+                const whiteQs = insolubleQs.filter(q => q.simplifiedColor === '白');
+                const colorQs = insolubleQs.filter(q => q.simplifiedColor !== '白');
+                
+                const randCol = Math.random();
+                // 2/3 機率挑有顏色的，1/3 機率挑白色的
+                if (randCol < 0.6667 && colorQs.length > 0) {
+                    return colorQs[Math.floor(Math.random() * colorQs.length)];
+                } else if (whiteQs.length > 0) {
+                    return whiteQs[Math.floor(Math.random() * whiteQs.length)];
+                } else {
+                    return colorQs[Math.floor(Math.random() * colorQs.length)]; // 防呆
+                }
+            } else if (solubleQs.length > 0) {
+                return solubleQs[Math.floor(Math.random() * solubleQs.length)]; // 防呆：如果只有可溶的題型
+            }
+            return validQuestions[0]; // 終極防呆
+        }
+
         /* ----- 一般練習模式邏輯 ----- */
         function nextQuestion() {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
@@ -598,9 +636,15 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
 
             userGuessPpt = null;
             userGuessColor = null;
+            userGuessSlightly = null;
+            
             document.getElementById('btn-precip-no').classList.remove('selected');
             document.getElementById('btn-precip-yes').classList.remove('selected');
+            
             document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('#solubility-options .sol-btn').forEach(b => b.classList.remove('selected'));
+            
+            document.getElementById('solubility-options').style.display = 'none';
             document.getElementById('color-options').style.display = 'none';
             document.getElementById('color-hint').style.display = 'none';
             
@@ -609,7 +653,7 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             document.getElementById('submit-btn').style.display = 'block';
             document.getElementById('submit-btn').disabled = true;
 
-            currentQ = validQuestions[Math.floor(Math.random() * validQuestions.length)];
+            currentQ = pickRandomQuestion(validQuestions);
             document.getElementById('ion-display').innerHTML = `${currentQ.cHtml} &nbsp;+&nbsp; ${currentQ.aHtml}`;
         }
 
@@ -619,23 +663,43 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             document.getElementById('btn-precip-yes').classList.toggle('selected', isPpt);
             
             if (isPpt) {
+                document.getElementById('solubility-options').style.display = 'flex';
                 document.getElementById('color-options').style.display = 'flex';
                 document.getElementById('color-hint').style.display = 'block';
-                document.getElementById('submit-btn').disabled = (userGuessColor === null);
+                checkSubmitEnable();
             } else {
+                document.getElementById('solubility-options').style.display = 'none';
                 document.getElementById('color-options').style.display = 'none';
                 document.getElementById('color-hint').style.display = 'none';
                 userGuessColor = null;
+                userGuessSlightly = null;
                 document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
-                document.getElementById('submit-btn').disabled = false;
+                document.querySelectorAll('#solubility-options .sol-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('submit-btn').disabled = false; // 不會沉澱可以直接送出
             }
+        }
+
+        function selectSolubility(isSlightly) {
+            userGuessSlightly = isSlightly;
+            document.getElementById('btn-sol-slightly').classList.toggle('selected', isSlightly);
+            document.getElementById('btn-sol-insoluble').classList.toggle('selected', !isSlightly);
+            checkSubmitEnable();
         }
 
         function selectColor(colorName, btnElement) {
             userGuessColor = colorName;
             document.querySelectorAll('#color-options .color-btn').forEach(b => b.classList.remove('selected'));
             btnElement.classList.add('selected');
-            document.getElementById('submit-btn').disabled = false;
+            checkSubmitEnable();
+        }
+
+        function checkSubmitEnable() {
+            if (!userGuessPpt) {
+                document.getElementById('submit-btn').disabled = false;
+            } else {
+                // 會沉澱時，必須同時選取「微溶/難溶」以及「顏色」
+                document.getElementById('submit-btn').disabled = (userGuessColor === null || userGuessSlightly === null);
+            }
         }
 
         function checkAnswer() {
@@ -644,7 +708,7 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
 
             if (!userGuessPpt && !actual.isPpt) {
                 isCorrect = true;
-            } else if (userGuessPpt && actual.isPpt && userGuessColor === actual.simplifiedColor) {
+            } else if (userGuessPpt && actual.isPpt && userGuessColor === actual.simplifiedColor && userGuessSlightly === actual.isSlightly) {
                 isCorrect = true;
             }
 
@@ -656,11 +720,11 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             
             if (isCorrect) {
                 feedbackEl.innerHTML = `🎉 <b>答對了！</b><br>${resultFormulaHtml}<br>` + 
-                    (actual.isPpt ? `產生 <b>${actual.color}</b> 沉澱。` : `可溶於水 (不沉澱)。`);
+                    (actual.isPpt ? `產生 <b>${actual.color}</b> 沉澱 (${actual.isSlightly ? '微溶' : '難溶'})。` : `可溶於水 (不沉澱)。`);
                 feedbackEl.className = 'feedback correct';
             } else {
-                let actualText = actual.isPpt ? `會沉澱，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
-                let userText = userGuessPpt ? `會沉澱 (${userGuessColor})` : `不會沉澱`;
+                let actualText = actual.isPpt ? `會沉澱 (${actual.isSlightly ? '微溶' : '難溶'})，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
+                let userText = userGuessPpt ? `會沉澱 (${userGuessSlightly ? '微溶' : '難溶'}, ${userGuessColor})` : `不會沉澱`;
                 
                 feedbackEl.innerHTML = `❌ <b>答錯了。</b><br>
                     ${resultFormulaHtml}<br>
@@ -690,7 +754,6 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
                 let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
                 
-                // 判斷是否有紀錄，若有則顯示刪除按鈕
                 let deleteBtn = (rec.maxC.c > 0 || rec.maxA.t > 0) 
                     ? `<button onclick="deleteChallengeRecord(${time})" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--wrong); padding: 5px;" title="清除此紀錄">🗑️</button>` 
                     : '';
@@ -710,10 +773,9 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
         function deleteChallengeRecord(time) {
             let timeText = time >= 60 ? (time/60) + " 分鐘" : time + " 秒";
             if (confirm(`確定要清除「${timeText}」的最高紀錄嗎？清除後無法復原喔！`)) {
-                // 重置該時間段的紀錄
                 challengeRecords[time] = { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} };
                 localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
-                renderChallengeRecords(); // 重新渲染畫面
+                renderChallengeRecords();
             }
         }
 
@@ -760,17 +822,21 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
 
         function nextChalQuestion() {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
-            chalCurrentQ = validQuestions[Math.floor(Math.random() * validQuestions.length)];
+            chalCurrentQ = pickRandomQuestion(validQuestions); // 同樣套用智慧抽題
             
             document.getElementById('challenge-ion-display').innerHTML = `${chalCurrentQ.cHtml} &nbsp;+&nbsp; ${chalCurrentQ.aHtml}`;
             
             chalGuessPpt = null;
             chalGuessColor = null;
+            chalGuessSlightly = null;
             
             document.getElementById('btn-chal-precip-no').classList.remove('selected');
             document.getElementById('btn-chal-precip-yes').classList.remove('selected');
-            document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
             
+            document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('#chal-solubility-options .sol-btn').forEach(b => b.classList.remove('selected'));
+            
+            document.getElementById('chal-solubility-options').style.display = 'none';
             document.getElementById('chal-color-options').style.display = 'none';
             document.getElementById('chal-submit-btn').disabled = true;
         }
@@ -781,21 +847,40 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             document.getElementById('btn-chal-precip-yes').classList.toggle('selected', isPpt);
             
             if (isPpt) {
+                document.getElementById('chal-solubility-options').style.display = 'flex';
                 document.getElementById('chal-color-options').style.display = 'flex';
-                document.getElementById('chal-submit-btn').disabled = (chalGuessColor === null);
+                checkChalSubmitEnable();
             } else {
+                document.getElementById('chal-solubility-options').style.display = 'none';
                 document.getElementById('chal-color-options').style.display = 'none';
                 chalGuessColor = null;
+                chalGuessSlightly = null;
                 document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+                document.querySelectorAll('#chal-solubility-options .sol-btn').forEach(b => b.classList.remove('selected'));
                 document.getElementById('chal-submit-btn').disabled = false;
             }
+        }
+
+        function selectChalSolubility(isSlightly) {
+            chalGuessSlightly = isSlightly;
+            document.getElementById('btn-chal-sol-slightly').classList.toggle('selected', isSlightly);
+            document.getElementById('btn-chal-sol-insoluble').classList.toggle('selected', !isSlightly);
+            checkChalSubmitEnable();
         }
 
         function selectChalColor(colorName, btnElement) {
             chalGuessColor = colorName;
             document.querySelectorAll('#chal-color-options .color-btn').forEach(b => b.classList.remove('selected'));
             btnElement.classList.add('selected');
-            document.getElementById('chal-submit-btn').disabled = false;
+            checkChalSubmitEnable();
+        }
+
+        function checkChalSubmitEnable() {
+            if (!chalGuessPpt) {
+                document.getElementById('chal-submit-btn').disabled = false;
+            } else {
+                document.getElementById('chal-submit-btn').disabled = (chalGuessColor === null || chalGuessSlightly === null);
+            }
         }
 
         function checkChalAnswer() {
@@ -804,7 +889,7 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
 
             if (!chalGuessPpt && !actual.isPpt) {
                 isCorrect = true;
-            } else if (chalGuessPpt && actual.isPpt && chalGuessColor === actual.simplifiedColor) {
+            } else if (chalGuessPpt && actual.isPpt && chalGuessColor === actual.simplifiedColor && chalGuessSlightly === actual.isSlightly) {
                 isCorrect = true;
             }
 
@@ -813,13 +898,13 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 chalCorrect++;
                 showChalFeedback(true, actual);
             } else {
-                let actualText = actual.isPpt ? `會沉澱，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
-                let userText = chalGuessPpt ? `會沉澱 (${chalGuessColor})` : `不會沉澱`;
+                let actualText = actual.isPpt ? `會沉澱 (${actual.isSlightly ? '微溶' : '難溶'})，顏色為 <b>${actual.color}</b>` : `<b>不會沉澱</b> (可溶)`;
+                let userText = chalGuessPpt ? `會沉澱 (${chalGuessSlightly ? '微溶' : '難溶'}, ${chalGuessColor})` : `不會沉澱`;
                 recordMistake(actual, actualText, userText);
                 showChalFeedback(false, actual);
             }
 
-            incrementPracticeCount(); // 挑戰模式也計入總成就
+            incrementPracticeCount(); 
             updateChalScore();
             nextChalQuestion();
         }
@@ -827,8 +912,7 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
         function showChalFeedback(isCorrect, actual) {
             const fb = document.getElementById('chal-quick-feedback');
             
-            // 建立包含化學式與狀態的答案字串
-            let ansText = actual.isPpt ? `${actual.compoundHtml} (${actual.color}沉澱)` : `${actual.compoundHtml} (可溶不沉澱)`;
+            let ansText = actual.isPpt ? `${actual.compoundHtml} (${actual.isSlightly ? '微溶' : '難溶'}, ${actual.color}沉澱)` : `${actual.compoundHtml} (可溶不沉澱)`;
 
             if (isCorrect) {
                 fb.innerHTML = `<span style="color: var(--correct);">⭕ 答對了！<br>正解：${ansText}</span>`;
@@ -836,7 +920,6 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 fb.innerHTML = `<span style="color: var(--wrong);">❌ 答錯了！<br>正解：${ansText}</span>`;
             }
 
-            // 延長顯示時間到 2.5 秒，讓玩家有時間看清楚
             if (fb.timeoutId) clearTimeout(fb.timeoutId);
             fb.timeoutId = setTimeout(() => { fb.innerHTML = ''; }, 2500);
         }
@@ -852,18 +935,15 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             let acc = chalTotal > 0 ? Math.round((chalCorrect / chalTotal) * 100) : 0;
             document.getElementById('res-accuracy').innerText = `${acc}%`;
 
-            // 檢查是否打破紀錄
             let rec = challengeRecords[chalInitialTime];
             let isNewMaxC = false;
             let isNewMaxA = false;
 
-            // 檢查最高題數
             if (chalCorrect > rec.maxC.c) {
                 rec.maxC = { c: chalCorrect, t: chalTotal };
                 isNewMaxC = true;
             }
 
-            // 檢查最高答對率 (答對率更高，或答對率相同但作答總數更多)
             if (chalTotal > 0) {
                 if (acc > rec.maxA.a || (acc === rec.maxA.a && chalTotal > rec.maxA.t) || rec.maxA.t === 0) {
                     rec.maxA = { c: chalCorrect, t: chalTotal, a: acc };
@@ -871,11 +951,9 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 }
             }
 
-            // 儲存新紀錄
             challengeRecords[chalInitialTime] = rec;
             localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
 
-            // 顯示破紀錄訊息
             let msgEl = document.getElementById('res-new-record');
             if (isNewMaxC && isNewMaxA) {
                 msgEl.innerHTML = '🌟 太猛了！題數與答對率雙雙破紀錄啦！ 🌟';
@@ -922,7 +1000,6 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                 return;
             }
             
-            // 生成所有錯題列表
             mistakes.forEach((m, idx) => {
                 const div = document.createElement('div');
                 div.className = 'mistake-item';
@@ -936,7 +1013,6 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
                     </div>`;
                 list.appendChild(div); 
             }); 
-            // 💡 修正 1：迴圈結束後，在這裡統一把所有生成的 delete-btn 綁定點擊事件
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -946,13 +1022,11 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             });
         }
 
-        // 💡 補上刪除單一紀錄用的函數，並加入確認視窗
         function removeMistake(index) {
-            // 加入確認視窗，按下「確定」才會執行刪除
             if (confirm("確定要刪除這筆紀錄嗎？")) {
-                mistakes.splice(index, 1); // 將該筆資料從陣列中刪除
-                localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes)); // 更新本地儲存
-                renderMistakes(); // 重新渲染畫面
+                mistakes.splice(index, 1);
+                localStorage.setItem('chemMistakesV2', JSON.stringify(mistakes));
+                renderMistakes(); 
             }
         }
 
@@ -963,7 +1037,7 @@ $Mn^{2^+}$, $C_2O_4^{2-}$, $MnC_2O_4$, 粉白
             
             if (!q) return alert("💡 資料庫中沒有這組搭配喔！");
             
-            const actualText = q.isPpt ? `會沉澱，顏色為 ${q.color}` : `不會沉澱 (可溶)`;
+            const actualText = q.isPpt ? `會沉澱 (${q.isSlightly ? '微溶' : '難溶'})，顏色為 ${q.color}` : `不會沉澱 (可溶)`;
             const htmlText = `${q.cHtml} + ${q.aHtml}`;
             
             mistakes = mistakes.filter(m => m.htmlText !== htmlText);
