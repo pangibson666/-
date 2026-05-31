@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V2.4</title>
+    <title>沉澱試煉 V2.5</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -79,7 +79,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V2.4</header>
+    <header>沉澱試煉 V2.5</header>
     <nav>
         <button id="nav-practice" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -89,7 +89,7 @@
 
     <div class="container">
         <!-- 練習區 -->
-        <div id="view-practice" class="view active">
+        <div id="view-practice" class="view">
             <div class="card">
                 <!-- 累積成就顯示區 -->
                 <div style="text-align: right; color: #888; font-size: 0.95rem; font-weight: bold; margin-bottom: -10px;">
@@ -181,7 +181,7 @@
         </div>
 
         <!-- 設定區 -->
-        <div id="view-settings" class="view">
+        <div id="view-settings" class="view active">
             <p class="info-text">💡 勾選你想練習的離子組合，未勾選的離子不會出現在題目中。<br>※ 題目只會出現「資料庫中存在」的組合。</p>
 	        <button onclick="setHighSchool()" style="margin-bottom: 15px; padding: 10px 15px; background: #8E44AD; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 一鍵套用高中課內範圍</button>
             <div class="settings-group">
