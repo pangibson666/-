@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉澱試煉 V2.2</title>
+    <title>沉澱試煉 V2.3</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -79,7 +79,7 @@
 </head>
 <body>
 
-    <header>沉澱試煉 V2.2</header>
+    <header>沉澱試煉 V2.3</header>
     <nav>
         <button id="nav-practice" class="active" onclick="switchTab('practice')">📝 練習區</button>
         <button id="nav-challenge" onclick="switchTab('challenge')">⏱️ 限時挑戰</button>
@@ -854,17 +854,40 @@ $Sr^{2+}$, $OH^-$, $Sr(OH)_2$, 溶
 
         /* ----- 限時挑戰模式邏輯 ----- */
         function renderChallengeRecords() {
-            [30, 60, 180].forEach(time => {
-                const rec = challengeRecords[time];
-                const rEl = document.getElementById(`record-${time}`);
-                if (!rEl) return;
-                
-                let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
-                let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
-                
-                rEl.innerHTML = `🏆 最多答對: <span style="color:var(--primary); font-weight:bold;">${textC}</span><br>🎯 最高答對率: <span style="color:var(--correct); font-weight:bold;">${textA}</span>`;
-            });
-        }
+		    [30, 60, 180].forEach(time => {
+		        const rec = challengeRecords[time];
+		        const rEl = document.getElementById(`record-${time}`);
+		        if (!rEl) return;
+		        
+		        let textC = rec.maxC.c > 0 ? `${rec.maxC.c} 題 <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxC.c}/${rec.maxC.t})</span>` : '尚無紀錄';
+		        let textA = rec.maxA.t > 0 ? `${rec.maxA.a}% <span style="font-size:0.85rem; font-weight:normal; color:#888;">(${rec.maxA.c}/${rec.maxA.t})</span>` : '尚無紀錄';
+		        
+		        // 判斷是否有紀錄，若有則顯示刪除按鈕
+		        let deleteBtn = (rec.maxC.c > 0 || rec.maxA.t > 0) 
+		            ? `<button onclick="deleteChallengeRecord(${time})" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--wrong); padding: 5px;" title="清除此紀錄">🗑️</button>` 
+		            : '';
+		
+		        rEl.innerHTML = `
+		            <div style="display: flex; justify-content: space-between; align-items: center;">
+		                <div>
+		                    🏆 最多答對: <span style="color:var(--primary); font-weight:bold;">${textC}</span><br>
+		                    🎯 最高答對率: <span style="color:var(--correct); font-weight:bold;">${textA}</span>
+		                </div>
+		                ${deleteBtn}
+		            </div>
+		        `;
+		    });
+		}
+
+		function deleteChallengeRecord(time) {
+		    let timeText = time >= 60 ? (time/60) + " 分鐘" : time + " 秒";
+		    if (confirm(`確定要清除「${timeText}」的最高紀錄嗎？清除後無法復原喔！`)) {
+		        // 重置該時間段的紀錄
+		        challengeRecords[time] = { maxC: {c:0, t:0}, maxA: {c:0, t:0, a:0} };
+		        localStorage.setItem('chemChalRecordsV2_2', JSON.stringify(challengeRecords));
+		        renderChallengeRecords(); // 重新渲染畫面
+		    }
+		}
 
         function startChallenge(seconds) {
             const validQuestions = database.filter(q => selectedCations.includes(q.cid) && selectedAnions.includes(q.aid));
